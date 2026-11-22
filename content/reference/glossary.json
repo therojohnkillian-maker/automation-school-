@@ -1,0 +1,19 @@
+{
+  "isolation": "Disconnecting equipment from every source of supply so it cannot be switched back on by accident. Normally done with an isolator that can be locked off.",
+  "lock-off": "Fitting your own padlock (and a tag) to an isolator in the off position, so nobody else can switch it on while you work.",
+  "voltage indicator": "A two-pole tester made for proving circuits dead. It shows if voltage is present between its two probes.",
+  "proving unit": "A small battery-powered device that produces a test voltage, used to check a voltage indicator works before and after use.",
+  "prove-test-prove": "Prove the tester works, test the circuit, then prove the tester again. Only then can the test result be trusted.",
+  "GS38": "HSE guidance on electrical test equipment for low voltage systems. It covers safe probes, leads and how testers are used.",
+  "permit to work": "A formal written system for controlling high-risk work. It lists hazards, isolations, precautions and who may work, and is issued and cancelled formally.",
+  "arc flash": "An explosive release of energy when current flows through the air between conductors. It causes burns, blast and molten metal spray.",
+  "hazardous area": "A place where flammable gas, vapour or dust can form an explosive atmosphere. Divided into zones. Only certified \"Ex\" equipment may be used.",
+  "DOL": "Direct-on-line: a motor is switched straight onto the full supply voltage.",
+  "FLC": "Full-load current: the current a motor draws at its rated output. Shown on the nameplate.",
+  "MPCB": "Motor protection circuit breaker. Switches and protects a motor circuit. In this course it is used for short-circuit protection.",
+  "contactor": "An electrically operated switch. When its coil is energised, its main poles and auxiliary contacts change over.",
+  "overload relay": "A device that measures motor current and trips if it stays too high for too long, protecting the motor from overheating.",
+  "NO": "Normally open: a contact that is open at rest and closes when operated.",
+  "NC": "Normally closed: a contact that is closed at rest and opens when operated.",
+  "holding contact": "An auxiliary NO contact of the contactor wired across the START button, keeping the coil energised after START is released. Also called a latch or retaining contact."
+}

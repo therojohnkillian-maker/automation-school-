@@ -9,6 +9,8 @@ import { ProfilePicker } from '../features/profiles/ProfilePicker';
 import { Home } from '../features/home/Home';
 import { Trainer } from '../features/trainer/Trainer';
 import { Settings } from '../features/settings/Settings';
+import { LearnList } from '../features/learn/LearnList';
+import { LessonPage } from '../features/learn/LessonPage';
 import { Notice } from '../components/ui';
 
 export function App() {
@@ -47,9 +49,12 @@ export function App() {
     );
   } else {
     body = (
-      <Shell profile={profile} onSwitch={() => { setFlash(null); setProfile(null); void load(); }}>
+      <Shell profile={profile} onSwitch={() => { setFlash(null); setProfile(null); window.location.hash = '#/'; void load(); }}>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/learn" element={<LearnList />} />
+          <Route path="/learn/:lessonId" element={<LessonPage />} />
+          <Route path="/learn/:lessonId/:step" element={<LessonPage />} />
           {profile.role === 'trainer' && <Route path="/trainer" element={<Trainer />} />}
           <Route
             path="/settings"
@@ -80,6 +85,7 @@ export function App() {
 function Shell({ profile, onSwitch, children }: { profile: Profile; onSwitch: () => void; children: React.ReactNode }) {
   const links = [
     { to: '/', label: 'Home', icon: '⌂' },
+    { to: '/learn', label: 'Learn', icon: '▤' },
     ...(profile.role === 'trainer' ? [{ to: '/trainer', label: 'Trainer', icon: '☑' }] : []),
     { to: '/settings', label: 'Settings', icon: '⚙' },
   ];
@@ -94,7 +100,7 @@ function Shell({ profile, onSwitch, children }: { profile: Profile; onSwitch: ()
       </header>
       <nav className="nav" aria-label="Main">
         {links.map((l) => (
-          <NavLink key={l.to} to={l.to} end className={({ isActive }) => (isActive ? 'active' : '')}>
+          <NavLink key={l.to} to={l.to} end={l.to === '/'} className={({ isActive }) => (isActive ? 'active' : '')}>
             <span aria-hidden="true" className="nav-icon">{l.icon}</span>
             <span>{l.label}</span>
           </NavLink>

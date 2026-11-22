@@ -5,7 +5,7 @@ An offline-first training app for apprentices: safety, wiring, motors, drives, P
 > **Training only.** The simulators are simplified and never connect to real equipment. An app score never makes anyone competent or authorised. Site procedures always come first.
 
 ## Status
-Phase 2 (Foundation): profiles, offline install, backup and restore, progress export and import. The lessons start in Phase 3.
+Phase 3 (First slice): M0 Safe isolation and the M3 DOL starter lesson, each through all seven steps (Why, Learn, Show, Build, Break, Prove, Apply), with the circuit simulator, hidden faults, scoring and trainer sign-off. See `docs/SIMULATORS.md` for simplifications.
 
 ## Develop
 ```bash

@@ -5,6 +5,7 @@ import { createProfile, listProfiles, removeProfile, updateProfile } from '../..
 import { buildProgress, importProgress, progressFileName, type ImportResult } from '../../data/files';
 import { useSession } from '../../app/session';
 import { Card, Field, Modal, Notice, downloadText, useAction } from '../../components/ui';
+import { SignOffs } from './SignOffs';
 
 export function Trainer() {
   const me = useSession((s) => s.profile)!;
@@ -15,6 +16,7 @@ export function Trainer() {
   const [editing, setEditing] = useState<Profile | null>(null);
   const [removing, setRemoving] = useState<Profile | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
   const importAction = useAction();
   const rowAction = useAction();
@@ -22,12 +24,15 @@ export function Trainer() {
   const refresh = useCallback(async () => {
     setPeople(await listProfiles());
     setHistory(await db.imports.orderBy('importedAt').reverse().limit(10).toArray());
+    setRefreshKey((k) => k + 1);
   }, []);
   useEffect(() => void refresh(), [refresh]);
 
   return (
     <main>
       <h1>Trainer</h1>
+
+      <SignOffs people={people} refreshKey={refreshKey} />
 
       <Card title="People" actions={<button className="primary" onClick={() => setAdding(true)}>+ Add apprentice</button>}>
         {rowAction.error && <Notice kind="error">{rowAction.error}</Notice>}

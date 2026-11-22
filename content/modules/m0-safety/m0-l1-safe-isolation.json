@@ -1,0 +1,183 @@
+{
+  "id": "m0-l1",
+  "moduleId": "m0",
+  "version": "1.0.0",
+  "title": "Safe isolation and proving dead",
+  "minutes": 45,
+  "summary": "Isolate a motor circuit, lock it off, and prove it dead with prove-test-prove. Also covers permits, arc flash, stored energy and hazardous areas.",
+  "requires": [],
+  "why": {
+    "text": "The pump **P-101** at the fictional Riverside bottling plant has a leaking terminal box gasket. Before anyone opens that box, the motor must be **dead**, and you must be **sure** it is dead.\n\nMost electrical deaths at work happen when someone believes a circuit is off and it is not: the wrong isolator, a wrong label, a welded contact, or a tester that had stopped working.\n\nIn this lesson you will learn a routine that catches every one of those mistakes. You will use it before every job in this course, and for the rest of your working life.\n\n**Your site procedure always comes first.** This lesson teaches common UK practice. Where your site does it differently, follow your site."
+  },
+  "learn": {
+    "cards": [
+      {
+        "title": "Dead working is the rule",
+        "text": "In the UK, the Electricity at Work Regulations 1989 expect electrical work to be done **dead**. Live work is only allowed in rare cases where it is unreasonable to make the equipment dead, and then only with strict precautions. As an apprentice you will **not** do live work.\n\n\"Dead\" means **isolated, secured and proved dead** at the point of work. Switching something off is not enough."
+      },
+      {
+        "title": "The safe isolation steps",
+        "text": "1. **Identify** the circuit and its means of [[isolation]] from drawings and labels. Get permission from the person in control of the plant.\n2. **Switch off** at the isolator.\n3. **Secure** it: fit your own padlock and a tag ([[lock-off]]).\n4. **Prove** your [[voltage indicator]] works on a [[proving unit]].\n5. **Test** at the point of work between every pair of conductors.\n6. **Prove** the voltage indicator again.\n7. Only now is the circuit proved dead. If any test shows voltage, **stop**.\n\nSteps 4 to 6 are called [[prove-test-prove]].",
+        "circuit": "m0-isolation"
+      },
+      {
+        "title": "Lock-off and tags",
+        "text": "Your padlock stops anyone switching the circuit back on while you work. Use **your own** lock, keep the **only key** on you, and never lend it.\n\nThe tag says who isolated it, when and why. Where several people work on the same equipment, use a multi-lock hasp so **everyone** fits their own lock.\n\nRemoving a lock is only done by the person who fitted it."
+      },
+      {
+        "title": "Choosing and checking your tester",
+        "text": "Use a two-pole [[voltage indicator]] made for proving dead, with probes that follow the HSE guidance [[GS38]]: finger guards, small exposed tips, and fused or current-limited leads in good condition.\n\nDo **not** use a non-contact voltage pen to prove dead. Do **not** rely on a multimeter set to the wrong range. Never use a resistance (Ω) test on a circuit that might be live."
+      },
+      {
+        "title": "Where and what to test",
+        "text": "Test at the **point of work**, which here is the motor terminal box, not at the isolator.\n\nA three-phase motor with no neutral has four conductors: **U1, V1, W1 and PE**. Test every pair:\n- U1–V1, V1–W1, U1–W1 (phase to phase)\n- U1–PE, V1–PE, W1–PE (phase to earth)\n\nThat is **six tests**. Where there is a neutral, test it too, against every phase and against earth.\n\nA motor winding joins its terminals together, so if only one phase is still live, **every** terminal can read live to earth. This is called back-feed. Any reading means stop."
+      },
+      {
+        "title": "Permits to work",
+        "text": "Some jobs are high risk, or need others to set up controls you cannot check yourself: high voltage, confined spaces, process isolations, or work on systems run by another team. For these, sites use a written **[[permit to work]]**.\n\nA permit lists the hazards, the isolations made, the precautions and who is allowed to work, and it is signed off and cancelled formally. You still prove dead yourself, even when a permit is issued."
+      },
+      {
+        "title": "Arc flash",
+        "text": "An [[arc flash]] is the violent release of energy when current jumps through the air between conductors. It can cause severe burns, blast injuries, molten metal spray and hearing damage, even if you never touch anything.\n\nIt can be triggered by a dropped tool, a wrong test lead setting or opening a faulty device. The best control is to **work dead**. Where testing near live parts is unavoidable, follow the site's risk assessment, keep your distance and wear the arc-rated PPE it specifies."
+      },
+      {
+        "title": "Stored energy",
+        "text": "Isolating the supply does not always remove all energy:\n- Variable speed drives and power supplies have **capacitors** that stay charged after isolation. Wait for the time on the drive's label, then prove dead.\n- Motors that keep turning (fans, loads that run down) can generate voltage.\n- Springs, gravity, compressed air and hydraulics can move machinery.\n\nIsolate and release **all** energy sources, not just electricity."
+      },
+      {
+        "title": "Hazardous areas",
+        "text": "A [[hazardous area]] is a place where flammable gas, vapour or dust can form an explosive atmosphere. Areas are split into zones:\n- Gas: **Zone 0** (present continuously or for long periods), **Zone 1** (likely in normal operation, occasionally), **Zone 2** (not likely, and only briefly if it does happen).\n- Dust: Zones 20, 21 and 22 follow the same pattern.\n\nOnly certified equipment marked \"Ex\" may be used there, and only trained, authorised people may work on it. Never open an Ex enclosure or use ordinary tools or testers in a hazardous area without the right permit."
+      }
+    ]
+  },
+  "show": {
+    "kind": "isolation",
+    "scenario": { "circuit": "m0-isolation", "target": "M1", "jobTag": "P-101 PUMP", "points": ["M1:U1", "M1:V1", "M1:W1", "M1:PE"] },
+    "intro": "Watch a correct isolation of pump P-101. Press **Do next step** each time. Every reading is calculated from the circuit, not recorded.",
+    "demo": [
+      { "say": "The job card names P-101 PUMP. The isolator Q0A is tagged P-101 PUMP. After agreeing with the person in control, we switch Q0A off.", "action": { "switch": { "part": "Q0A", "on": false } } },
+      { "say": "Fit a personal padlock and tag to Q0A. Now nobody else can switch it back on.", "action": { "lock": "Q0A" } },
+      { "say": "Prove the voltage indicator works on the proving unit before testing.", "action": { "prove": true } },
+      { "say": "Test U1 to V1 at the motor terminal box.", "action": { "test": ["M1:U1", "M1:V1"] } },
+      { "say": "Test V1 to W1.", "action": { "test": ["M1:V1", "M1:W1"] } },
+      { "say": "Test U1 to W1.", "action": { "test": ["M1:U1", "M1:W1"] } },
+      { "say": "Test U1 to earth (PE).", "action": { "test": ["M1:U1", "M1:PE"] } },
+      { "say": "Test V1 to earth.", "action": { "test": ["M1:V1", "M1:PE"] } },
+      { "say": "Test W1 to earth.", "action": { "test": ["M1:W1", "M1:PE"] } },
+      { "say": "Prove the voltage indicator again. It still works, so the six \"no indication\" results can be trusted.", "action": { "prove": true } },
+      { "say": "Isolated, locked, and proved dead at the point of work. Only now can work begin.", "action": { "declare": true } }
+    ]
+  },
+  "build": {
+    "kind": "isolation",
+    "scenario": { "circuit": "m0-isolation", "target": "M1", "jobTag": "P-101 PUMP", "points": ["M1:U1", "M1:V1", "M1:W1", "M1:PE"] },
+    "guided": { "intro": "Now you do it. Isolate pump **P-101** and prove it dead. The hint panel tells you the next step if you get stuck." },
+    "unguided": { "intro": "Same job, **no hints**. Isolate pump **P-101** and prove it dead. Any missed step counts as a safety error." }
+  },
+  "break": {
+    "kind": "isolation",
+    "scenario": { "circuit": "m0-isolation", "target": "M1", "jobTag": "P-101 PUMP", "points": ["M1:U1", "M1:V1", "M1:W1", "M1:PE"] },
+    "intro": "Something is wrong on this job, and you are not told what. Isolate **P-101** and prove it dead **if you can**. If you find a problem, stop and report it. Never declare a circuit dead unless your tests prove it.",
+    "faults": [
+      { "id": "m0-labels", "kind": "labels-swapped", "parts": ["Q0A", "Q0B"], "report": "The isolator labels are wrong: the isolator tagged P-101 does not feed the pump." },
+      { "id": "m0-tester", "kind": "tester-faulty", "report": "My voltage indicator failed its check on the proving unit." },
+      { "id": "m0-welded", "kind": "contact-closed", "part": "Q0A", "a": "3", "b": "4", "report": "Voltage is still present after isolating: one pole of the isolator did not open." }
+    ],
+    "parMeasurements": 10,
+    "parSeconds": 240,
+    "extraReports": ["Nothing was wrong. The circuit isolated and proved dead normally."]
+  },
+  "prove": {
+    "passMark": 0.8,
+    "questions": [
+      {
+        "id": "q1", "critical": true,
+        "text": "Before you use your voltage indicator to prove a circuit dead, what must you do first?",
+        "options": ["Check it on a proving unit (or known live source) to show it works", "Check the battery level on the display", "Test it on the circuit you are about to work on", "Nothing, if it was tested last week"],
+        "answer": 0,
+        "explain": "A tester that has failed shows \"no voltage\" on a live circuit. Proving it first shows it can detect voltage."
+      },
+      {
+        "id": "q2", "critical": true,
+        "text": "You have tested all conductors and found no voltage. What must you do before touching them?",
+        "options": ["Prove the voltage indicator again on the proving unit", "Nothing more, the tests showed it is dead", "Switch the isolator on and off again", "Test with a non-contact pen as well"],
+        "answer": 0,
+        "explain": "If the tester failed during your tests, every result would look dead. Proving it again afterwards confirms the results."
+      },
+      {
+        "id": "q3",
+        "text": "Which instrument is suitable for proving a circuit dead?",
+        "options": ["A two-pole voltage indicator with GS38-style probes", "A non-contact voltage pen", "A multimeter on the resistance (Ω) range", "An insulation resistance tester"],
+        "answer": 0,
+        "explain": "A two-pole voltage indicator made for the job is the right tool. Non-contact pens can miss voltage, and an Ω or insulation test on a live circuit is dangerous."
+      },
+      {
+        "id": "q4", "critical": true,
+        "text": "You switched off and locked the isolator labelled for your motor. Your tester shows 230 V between U1 and PE. What do you do?",
+        "options": ["Stop. Treat it as live, do not work, and report it", "Carry on carefully, wearing gloves", "Test again with a different setting until it reads zero", "Remove your lock and switch the isolator back on"],
+        "answer": 0,
+        "explain": "Any voltage means the circuit is not dead. The label may be wrong, a contact may be welded, or there is another supply. Stop and report."
+      },
+      {
+        "id": "q5",
+        "text": "Why do you fit your own padlock and keep the only key?",
+        "options": ["So nobody else can switch the circuit back on while you work", "So the isolator cannot be damaged", "Because the tag is not allowed on its own", "So the supervisor knows the job is finished"],
+        "answer": 0,
+        "explain": "Your lock and key keep control of the isolation with the person at risk: you."
+      },
+      {
+        "id": "q6",
+        "text": "How many tests do you make at the terminals of a three-phase motor with no neutral?",
+        "options": ["6: three phase-to-phase and three phase-to-earth", "3: one per phase to earth", "4: one per conductor", "1: between any two phases"],
+        "answer": 0,
+        "explain": "Test every pair of the four conductors U1, V1, W1 and PE. That is six tests."
+      },
+      {
+        "id": "q7",
+        "text": "What is an arc flash?",
+        "options": ["A violent release of energy when current jumps through air, causing burns and blast", "The spark you see when a contactor opens normally", "A light on the tester that shows voltage", "A short flicker when a lamp is switched on"],
+        "answer": 0,
+        "explain": "An arc flash can injure you without any contact. Working dead is the best control."
+      },
+      {
+        "id": "q8",
+        "text": "When is a permit to work normally used?",
+        "options": ["For higher-risk work where precautions set up by others must be recorded and checked", "For every job, however small", "Only for work outside normal hours", "Instead of proving dead"],
+        "answer": 0,
+        "explain": "A permit controls high-risk work. It never replaces your own prove-test-prove."
+      },
+      {
+        "id": "q9",
+        "text": "A variable speed drive has just been isolated. Why should you wait before touching its power terminals?",
+        "options": ["Its capacitors can stay charged. Wait for the time on its label, then prove dead", "The fan must stop first or it will overheat", "The display must go blank so the settings are saved", "You do not need to wait if it is isolated"],
+        "answer": 0,
+        "explain": "Drive DC bus capacitors store dangerous energy after isolation. Wait, then prove dead."
+      },
+      {
+        "id": "q10",
+        "text": "In a gas hazardous area, which zone is an explosive atmosphere likely to occur in occasionally during normal operation?",
+        "options": ["Zone 1", "Zone 0", "Zone 2", "Zone 21"],
+        "answer": 0,
+        "explain": "Zone 0 is continuous or long periods, Zone 1 is likely occasionally in normal operation, Zone 2 is unlikely and brief. Zone 21 is a dust zone."
+      },
+      {
+        "id": "q11", "critical": true,
+        "text": "Can you use a non-contact voltage pen to prove a circuit dead?",
+        "options": ["No. Use a two-pole voltage indicator and prove-test-prove", "Yes, if it beeps loudly", "Yes, on circuits under 400 V", "Yes, if you test twice"],
+        "answer": 0,
+        "explain": "Non-contact detectors can fail to detect voltage, for example through shielded cable. They are not for proving dead."
+      }
+    ]
+  },
+  "apply": {
+    "intro": "Do this on the training bench while your trainer watches. Your trainer signs it off. An app score alone never makes anyone competent or authorised.",
+    "items": [
+      { "id": "a1", "text": "Identifies the correct means of isolation from drawings and labels, and gets permission from the person in control." },
+      { "id": "a2", "text": "Switches off, fits a personal padlock and a completed tag." },
+      { "id": "a3", "text": "Selects a suitable two-pole voltage indicator and proving unit, and checks the leads and probes (GS38)." },
+      { "id": "a4", "text": "Proves the tester, tests all conductor pairs at the point of work, then proves the tester again." },
+      { "id": "a5", "text": "Explains correctly what to do if voltage is found." },
+      { "id": "a6", "text": "Explains stored energy, arc flash and when a permit to work is needed." }
+    ]
+  }
+}

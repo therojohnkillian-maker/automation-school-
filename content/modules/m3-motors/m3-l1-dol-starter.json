@@ -1,0 +1,627 @@
+{
+  "id": "m3-l1",
+  "moduleId": "m3",
+  "version": "1.0.0",
+  "title": "DOL starter: wire, start and fault-find",
+  "minutes": 60,
+  "summary": "Wire a direct-on-line starter with 24 V DC control, prove it works, then find hidden faults by measuring.",
+  "requires": [
+    "m0-l1"
+  ],
+  "why": {
+    "text": "Conveyor **CV-3** at the fictional Riverside bottling plant has a new 2.2 kW motor. It needs a starter: press START and it runs, press STOP and it stops, and if the motor is overloaded it must trip and **stay off** until someone deals with it.\n\nThe direct-on-line (DOL) starter does exactly this. It is the most common starter you will meet. Faster faults get found by technicians who understand **why** each wire is there."
+  },
+  "learn": {
+    "cards": [
+      {
+        "title": "What a DOL starter does",
+        "text": "[[DOL]] means the motor is switched straight onto the full 400 V supply. It is simple and cheap, and gives full starting torque.\n\nThe catch: while starting, the motor draws several times its [[FLC]] (often 6 to 8 times) for a second or two. That is fine for small motors. Large motors use star-delta, soft starters or drives instead (later lessons)."
+      },
+      {
+        "title": "The power circuit",
+        "text": "Follow the three phases from top to bottom:\n1. **Q1** [[MPCB]]: protects against short circuits and lets you switch the circuit off.\n2. **KM1** [[contactor]] main poles: open and close to start and stop the motor.\n3. **F2** [[overload relay]]: measures motor current, and trips if it is too high for too long.\n4. **M1** motor terminals U1, V1, W1, plus the earth (PE).\n\nThe phase order at U1, V1, W1 sets the direction. Swapping **any two** phases reverses the motor.",
+        "circuit": "dol-starter"
+      },
+      {
+        "title": "24 V DC control",
+        "text": "The control circuit runs at 24 V DC from power supply **G1**, fed through MCB **F1**. Low voltage control is safer for people operating push buttons, and it matches PLC inputs and outputs.\n\nNotice G1 is fed from **after** Q1: switching Q1 off kills the control circuit too."
+      },
+      {
+        "title": "The holding (latch) contact",
+        "text": "START (S2) is a push button with a [[NO]] contact. It only closes while you press it. So how does the motor keep running when you let go?\n\nKM1 has an auxiliary NO contact, **13-14**, wired **in parallel** with START. When the coil pulls in, 13-14 closes and keeps feeding the coil after you release START. This is the [[holding contact]]."
+      },
+      {
+        "title": "Why STOP is normally closed",
+        "text": "STOP (S1) is a [[NC]] contact, wired in **series** with everything else. Pressing it breaks the coil circuit and the contactor drops out.\n\nIf a STOP wire breaks or comes loose, the coil circuit opens and the motor stops. A fault makes the motor **stop**, never **fail to stop**. We call this fail-safe.\n\nThe overload's NC contact **95-96** sits in the same series path, so an overload trip also drops out KM1."
+      },
+      {
+        "title": "Overload protection, and no automatic restart",
+        "text": "Set the overload to the motor's **nameplate full-load current**. Here that is 4.6 A.\n\nWhen it trips, 95-96 opens and KM1 drops out. Contact **97-98** closes and lights the TRIP lamp H2.\n\nResetting the overload must **not** restart the motor. Because the holding contact opened when KM1 dropped out, someone has to press START again. A motor that restarts by itself can injure a person who is clearing a jam."
+      }
+    ]
+  },
+  "show": {
+    "kind": "circuit",
+    "circuit": "dol-starter",
+    "intro": "This starter is wired correctly and switched on. Work through each task. The event log explains what happens and why.",
+    "tasks": [
+      {
+        "id": "t1",
+        "text": "Press and hold START (S2). KM1 pulls in and the motor starts.",
+        "when": [
+          {
+            "part": "S2",
+            "pressed": true
+          },
+          {
+            "part": "KM1",
+            "energised": true
+          }
+        ]
+      },
+      {
+        "id": "t2",
+        "text": "Let go of START. The motor keeps running because KM1 13-14 now feeds the coil.",
+        "when": [
+          {
+            "part": "S2",
+            "pressed": false
+          },
+          {
+            "part": "KM1",
+            "energised": true
+          },
+          {
+            "part": "M1",
+            "motor": "running"
+          }
+        ]
+      },
+      {
+        "id": "t3",
+        "text": "Measure the voltage across the coil KM1 A1 to A2 with the meter in V= mode.",
+        "measure": {
+          "a": "KM1:A1",
+          "b": "KM1:A2",
+          "mode": "VDC"
+        }
+      },
+      {
+        "id": "t4",
+        "text": "Press STOP (S1). KM1 drops out and the motor coasts to a stop.",
+        "when": [
+          {
+            "part": "S1",
+            "pressed": true
+          },
+          {
+            "part": "KM1",
+            "energised": false
+          }
+        ]
+      },
+      {
+        "id": "t5",
+        "text": "Start the motor again, then press TEST on the overload F2. The motor stops and TRIP lamp H2 lights.",
+        "when": [
+          {
+            "part": "F2",
+            "tripped": true
+          },
+          {
+            "part": "H2",
+            "lit": true
+          },
+          {
+            "part": "KM1",
+            "energised": false
+          }
+        ]
+      },
+      {
+        "id": "t6",
+        "text": "Press RESET on F2. The motor does NOT restart by itself. Now press START to run it again.",
+        "when": [
+          {
+            "part": "F2",
+            "tripped": false
+          },
+          {
+            "part": "KM1",
+            "energised": true
+          }
+        ]
+      }
+    ]
+  },
+  "build": {
+    "kind": "circuit",
+    "circuit": "dol-starter",
+    "guided": {
+      "intro": "The power circuit and lamps are already wired. **Wire the control circuit**: STOP, START, the holding contact, the overload contact and the coil. Tap a terminal, then tap another to add a wire. Tap a wire to select it and delete it.",
+      "removeWires": [
+        "c5",
+        "c6",
+        "c7",
+        "c8",
+        "c9",
+        "c10",
+        "c11"
+      ],
+      "hints": [
+        "Start at G1 + (24 V). It feeds STOP S1 terminal 11.",
+        "From S1 terminal 12, go to START S2 terminal 13.",
+        "The holding contact KM1 13-14 goes in parallel with S2: wire S2:13 to KM1:13 and S2:14 to KM1:14.",
+        "After S2:14, go through the overload contact F2 95-96 (it is closed when not tripped).",
+        "F2:96 feeds the coil KM1:A1. KM1:A2 returns to G1 − (0 V)."
+      ]
+    },
+    "unguided": {
+      "intro": "Now wire the **power circuit from Q1 to the motor** and the **whole control circuit**, with no hints. The supply, control supply and lamps are already wired.",
+      "removeWires": [
+        "p4",
+        "p5",
+        "p6",
+        "p7",
+        "p8",
+        "p9",
+        "p10",
+        "p11",
+        "p12",
+        "c5",
+        "c6",
+        "c7",
+        "c8",
+        "c9",
+        "c10",
+        "c11"
+      ]
+    },
+    "checks": [
+      {
+        "do": {
+          "kind": "switch",
+          "part": "Q1",
+          "on": true
+        }
+      },
+      {
+        "do": {
+          "kind": "switch",
+          "part": "F1",
+          "on": true
+        }
+      },
+      {
+        "wait": 100
+      },
+      {
+        "expect": {
+          "noShorts": true
+        },
+        "fail": "There is a short circuit: a protective device tripped as soon as power was applied. Look for a wire joining two different supply conductors."
+      },
+      {
+        "expect": {
+          "stable": true
+        },
+        "fail": "The circuit will not settle (relay chatter). Check that the coil is not switching its own supply off."
+      },
+      {
+        "expect": {
+          "part": "G1",
+          "psuOn": true
+        },
+        "fail": "The 24 V supply G1 is off. Check the feed from Q1 through F1 to G1."
+      },
+      {
+        "expect": {
+          "part": "KM1",
+          "energised": false
+        },
+        "fail": "KM1 pulls in without anyone pressing START. Check that START is a normally open contact and the holding contact is not bridging it permanently."
+      },
+      {
+        "expect": {
+          "part": "M1",
+          "motor": "not-powered"
+        },
+        "fail": "The motor runs before KM1 is switched on. The power circuit must pass through the KM1 main poles."
+      },
+      {
+        "do": {
+          "kind": "press",
+          "part": "S2"
+        }
+      },
+      {
+        "wait": 100
+      },
+      {
+        "expect": {
+          "part": "KM1",
+          "energised": true
+        },
+        "fail": "Pressing START does not pull in KM1. Trace the path from G1 + through S1, S2 and F2 95-96 to KM1 A1, and from A2 back to G1 −."
+      },
+      {
+        "do": {
+          "kind": "release",
+          "part": "S2"
+        }
+      },
+      {
+        "wait": 100
+      },
+      {
+        "expect": {
+          "part": "KM1",
+          "energised": true
+        },
+        "fail": "KM1 drops out when you let go of START. The holding contact KM1 13-14 must be wired in parallel with START."
+      },
+      {
+        "wait": 2000
+      },
+      {
+        "expect": {
+          "part": "M1",
+          "motor": "running"
+        },
+        "fail": "KM1 is on but the motor is not running on three phases. Trace each phase Q1 → KM1 → F2 → M1."
+      },
+      {
+        "expect": {
+          "part": "M1",
+          "motor": "running",
+          "direction": "forward"
+        },
+        "fail": "The motor runs backwards. Connect F2:2 to U1, F2:4 to V1 and F2:6 to W1 (or swap two phases)."
+      },
+      {
+        "expect": {
+          "part": "F2",
+          "feedsMotor": "M1"
+        },
+        "fail": "The motor is not fed through the overload F2 power poles, so it is not protected."
+      },
+      {
+        "expect": {
+          "part": "H1",
+          "lit": true
+        },
+        "fail": "The RUN lamp H1 is not lit while the motor runs."
+      },
+      {
+        "do": {
+          "kind": "press",
+          "part": "S1"
+        }
+      },
+      {
+        "wait": 100
+      },
+      {
+        "expect": {
+          "part": "KM1",
+          "energised": false
+        },
+        "fail": "Pressing STOP does not drop out KM1. STOP must be a normally closed contact in series with the coil circuit."
+      },
+      {
+        "do": {
+          "kind": "release",
+          "part": "S1"
+        }
+      },
+      {
+        "wait": 100
+      },
+      {
+        "expect": {
+          "part": "KM1",
+          "energised": false
+        },
+        "fail": "The motor restarts when STOP is released. The holding contact must sit after STOP, not around it."
+      },
+      {
+        "do": {
+          "kind": "press",
+          "part": "S1"
+        }
+      },
+      {
+        "do": {
+          "kind": "press",
+          "part": "S2"
+        }
+      },
+      {
+        "wait": 100
+      },
+      {
+        "expect": {
+          "part": "KM1",
+          "energised": false
+        },
+        "fail": "With STOP and START pressed together, the motor runs. STOP must always win: put STOP before START in the series path."
+      },
+      {
+        "do": {
+          "kind": "release",
+          "part": "S1"
+        }
+      },
+      {
+        "do": {
+          "kind": "release",
+          "part": "S2"
+        }
+      },
+      {
+        "do": {
+          "kind": "press",
+          "part": "S2"
+        }
+      },
+      {
+        "do": {
+          "kind": "release",
+          "part": "S2"
+        }
+      },
+      {
+        "wait": 100
+      },
+      {
+        "do": {
+          "kind": "trip-test",
+          "part": "F2"
+        }
+      },
+      {
+        "wait": 100
+      },
+      {
+        "expect": {
+          "part": "KM1",
+          "energised": false
+        },
+        "fail": "An overload trip does not stop the motor. The F2 95-96 contact must be in series with the coil."
+      },
+      {
+        "expect": {
+          "part": "H2",
+          "lit": true
+        },
+        "fail": "The TRIP lamp H2 does not light when F2 trips."
+      },
+      {
+        "do": {
+          "kind": "reset",
+          "part": "F2"
+        }
+      },
+      {
+        "wait": 500
+      },
+      {
+        "expect": {
+          "part": "KM1",
+          "energised": false
+        },
+        "fail": "The motor restarts by itself when the overload is reset. This is dangerous. The holding contact must be the only thing keeping the coil on after START."
+      }
+    ]
+  },
+  "break": {
+    "kind": "circuit",
+    "circuit": "dol-starter",
+    "intro": "This starter has **one hidden fault**. Operate it to see the symptom, then use the meter to find the cause. In this simulator you may measure voltage with the power on. On a real panel, live testing is only allowed when it is justified, by a competent person, following the site risk assessment and GS38. Switch off Q1 before any resistance (Ω) test. When you know the cause, choose it from the list.",
+    "faults": [
+      {
+        "id": "dol-ol-nc",
+        "kind": "contact-open",
+        "part": "F2",
+        "a": "95",
+        "b": "96",
+        "report": "Overload contact F2 95-96 is open, although the overload has not tripped."
+      },
+      {
+        "id": "dol-latch",
+        "kind": "contact-open",
+        "part": "KM1",
+        "a": "13",
+        "b": "14",
+        "report": "Holding contact KM1 13-14 does not close."
+      },
+      {
+        "id": "dol-coil",
+        "kind": "coil-open",
+        "part": "KM1",
+        "report": "The KM1 coil is open circuit (burnt out)."
+      },
+      {
+        "id": "dol-phase",
+        "kind": "contact-open",
+        "part": "Q1",
+        "a": "5",
+        "b": "6",
+        "report": "Q1 pole 5-6 is open: phase L3 does not reach the motor."
+      },
+      {
+        "id": "dol-a2",
+        "kind": "wire-open",
+        "wire": "c11",
+        "report": "The wire from KM1 A2 to G1 0 V is broken."
+      },
+      {
+        "id": "dol-stop-wire",
+        "kind": "wire-open",
+        "wire": "c6",
+        "report": "The wire from S1 terminal 12 to S2 terminal 13 is broken."
+      }
+    ],
+    "parMeasurements": 6,
+    "parSeconds": 300,
+    "extraReports": [
+      "Nothing is wrong with the starter."
+    ]
+  },
+  "prove": {
+    "passMark": 0.8,
+    "questions": [
+      {
+        "id": "q1",
+        "text": "In a DOL starter, what keeps the contactor energised after START is released?",
+        "options": [
+          "The holding contact KM1 13-14 wired in parallel with START",
+          "The overload contact 95-96",
+          "The STOP button",
+          "A timer inside the contactor"
+        ],
+        "answer": 0,
+        "explain": "The auxiliary NO contact closes when the coil pulls in and bridges START."
+      },
+      {
+        "id": "q2",
+        "text": "Why is a STOP button wired with a normally closed contact?",
+        "options": [
+          "So a broken wire or loose terminal stops the motor (fail-safe)",
+          "Because NC contacts are cheaper",
+          "So the motor starts faster",
+          "So the lamp lights"
+        ],
+        "answer": 0,
+        "explain": "With NC in series, any break in the stop circuit stops the motor instead of leaving it unable to stop."
+      },
+      {
+        "id": "q3",
+        "critical": true,
+        "text": "The overload trips. You find the cause and reset the overload. What should the motor do?",
+        "options": [
+          "Stay stopped until someone presses START",
+          "Restart straight away",
+          "Restart after a short delay",
+          "Run in reverse"
+        ],
+        "answer": 0,
+        "explain": "An automatic restart could injure someone working on the machine. Resetting must never restart the motor."
+      },
+      {
+        "id": "q4",
+        "text": "What does the thermal overload relay protect against?",
+        "options": [
+          "The motor overheating from too much current for too long",
+          "Short circuits in the cable",
+          "Electric shock to people",
+          "Lightning strikes"
+        ],
+        "answer": 0,
+        "explain": "Short circuits are cleared by the MPCB or fuses. Shock protection is by earthing and RCDs. The overload protects the motor."
+      },
+      {
+        "id": "q5",
+        "text": "A motor nameplate shows a full-load current of 4.6 A. Where do you set the overload?",
+        "options": [
+          "4.6 A, the nameplate full-load current",
+          "6 × 4.6 = 27.6 A to allow for starting",
+          "Half of 4.6 A for extra safety",
+          "The maximum on the dial"
+        ],
+        "answer": 0,
+        "explain": "Set it to the nameplate FLC. The overload's time delay already allows for the short starting current."
+      },
+      {
+        "id": "q6",
+        "text": "A 4-pole motor on a 50 Hz supply has a synchronous speed of:",
+        "options": [
+          "1500 rpm",
+          "3000 rpm",
+          "1000 rpm",
+          "750 rpm"
+        ],
+        "answer": 0,
+        "explain": "n = 120 × f ÷ poles = 120 × 50 ÷ 4 = 1500 rpm. The real speed is a little lower (slip), for example 1430 rpm."
+      },
+      {
+        "id": "q7",
+        "text": "The motor runs the wrong way. What is the fix?",
+        "options": [
+          "Isolate, prove dead, then swap any two phases at the motor",
+          "Swap the START and STOP wires",
+          "Reverse the 24 V supply to the coil",
+          "Swap the PE and one phase"
+        ],
+        "answer": 0,
+        "explain": "Swapping any two phases reverses rotation. PE must never be swapped with a phase."
+      },
+      {
+        "id": "q8",
+        "text": "The motor hums but does not turn, and the overload trips after a few seconds. What is the most likely cause?",
+        "options": [
+          "One phase is missing",
+          "The STOP button is stuck",
+          "The RUN lamp has failed",
+          "The 24 V supply is too high"
+        ],
+        "answer": 0,
+        "explain": "On two phases a stopped motor cannot start. It draws high current until the overload trips."
+      },
+      {
+        "id": "q9",
+        "critical": true,
+        "text": "Before changing any wiring in the starter, you must:",
+        "options": [
+          "Isolate, lock off and prove dead",
+          "Press STOP",
+          "Switch off F1 only",
+          "Tell the operator you are working on it"
+        ],
+        "answer": 0,
+        "explain": "STOP and control MCBs are not isolation. Safe isolation is needed before any wiring work."
+      },
+      {
+        "id": "q10",
+        "text": "With START pressed, you measure 24 V DC across KM1 A1–A2 but the contactor does not pull in. What is the most likely fault?",
+        "options": [
+          "The coil is open circuit",
+          "The STOP button is open",
+          "The overload has tripped",
+          "The 24 V supply is off"
+        ],
+        "answer": 0,
+        "explain": "Full voltage across the coil but no pull-in points to the coil itself. A broken feed or return would show 0 V across it."
+      }
+    ]
+  },
+  "apply": {
+    "intro": "Do this on the training bench while your trainer watches. Your trainer signs it off. An app score alone never makes anyone competent or authorised.",
+    "items": [
+      {
+        "id": "a1",
+        "text": "Carries out safe isolation before starting work."
+      },
+      {
+        "id": "a2",
+        "text": "Wires the power and control circuits to the drawing: correct terminations, ferrules where used, tidy routing and labels."
+      },
+      {
+        "id": "a3",
+        "text": "Sets the overload to the motor nameplate full-load current."
+      },
+      {
+        "id": "a4",
+        "text": "Before energising, carries out and records continuity and insulation resistance tests to the site procedure."
+      },
+      {
+        "id": "a5",
+        "text": "Functional test with the trainer: start, latch, stop, overload trip, no automatic restart after reset, correct direction."
+      },
+      {
+        "id": "a6",
+        "text": "Leaves the panel safe: covers fitted, tools removed, isolation removed following the procedure."
+      }
+    ]
+  }
+}
