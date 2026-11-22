@@ -286,3 +286,70 @@ test('phone: tap-to-wire and the meter work on a touch screen', async () => {
   await ctx.close();
   rmSync(dir, { recursive: true, force: true });
 });
+
+for (const target of [{ name: 'laptop', opts: { viewport: { width: 1366, height: 900 } } }, { name: 'phone', opts: (({ defaultBrowserType: _d, ...rest }) => rest)(devices['Pixel 7']) }]) {
+  test(`3D equipment view follows the simulator and its terminals take meter probes (${target.name})`, async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'as-e2e-'));
+    const ctx = await chromium.launchPersistentContext(dir, { ...target.opts, executablePath });
+    const p = ctx.pages()[0] ?? (await ctx.newPage());
+    const errors: string[] = [];
+    p.on('pageerror', (e) => errors.push(e.message));
+    await p.goto(BASE);
+    await p.getByText('I understand this app is for training only').click();
+    await p.getByRole('button', { name: 'Create trainer profile' }).click();
+    await p.goto(`${BASE}#/learn/m0-l1/why`);
+    await expect(p.getByRole('button', { name: /Next: Learn/ })).toBeVisible();
+    // Mark M0 passed and DOL up to Show, as if done earlier.
+    await p.evaluate(async () => {
+      const req = indexedDB.open('automation-school');
+      await new Promise((r) => (req.onsuccess = r));
+      const tx = req.result.transaction('lessonProgress', 'readwrite');
+      const st = tx.objectStore('lessonProgress');
+      const all: Record<string, unknown>[] = await new Promise((r) => {
+        const q = st.getAll();
+        q.onsuccess = () => r(q.result);
+      });
+      const m0 = all[0];
+      st.put({ ...m0, steps: { why: true, learn: true, show: true, buildGuided: true, build: true, break: { passed: true, bestScore: 90 }, prove: { passed: true, bestScore: 90 } } });
+      st.put({ ...m0, id: 'X-m3', lessonId: 'm3-l1', steps: { why: true, learn: true } });
+      await new Promise((r) => (tx.oncomplete = r));
+    });
+    await p.reload();
+    await pick(p, 'SD');
+    await p.goto(`${BASE}#/learn/m3-l1/show`);
+    await p.getByRole('button', { name: '3D equipment' }).click();
+    await expect(p.locator('.eq3d-host canvas')).toBeVisible();
+    await expect(p.locator('.plate3d', { hasText: /^KM1 / })).toHaveText('KM1 · OPEN (O)');
+    const start = p.locator('[data-ctl3d="S2"]');
+    await start.dispatchEvent('pointerdown');
+    await expect(p.locator('.plate3d', { hasText: /^KM1 / })).toHaveText('KM1 · PULLED IN (I)');
+    await start.dispatchEvent('pointerup');
+    await expect(p.locator('.plate3d', { hasText: /^M1 / })).toContainText('RUNNING · forward', { timeout: 5000 });
+    await expect(p.locator('.tasks li').nth(1)).toContainText('Done');
+    // Zoomed out, terminal labels are hidden; zoom to the contactor and probe the coil.
+    await expect(p.locator('[data-term3d="KM1:A1"]')).toBeHidden();
+    await p.getByRole('button', { name: 'KM1 + F2' }).click();
+    await expect(p.locator('[data-term3d="KM1:A1"]')).toBeVisible();
+    await p.locator('[data-term3d="KM1:A1"]').click();
+    await p.locator('[data-term3d="KM1:A2"]').click();
+    await p.getByRole('button', { name: 'DC volts' }).click();
+    await expect(p.getByTestId('meter-reading')).toHaveText('24.0 V=');
+    await expect(p.locator('.tasks li').nth(2)).toContainText('Done');
+    if (target.name === 'laptop') {
+      // Press the red TEST button on the 3D overload itself (screen position for this camera view and canvas size).
+      const r = (await p.locator('.eq3d-host canvas').boundingBox())!;
+      expect(Math.round(r.width)).toBe(771);
+      await p.mouse.click(r.x + 401, r.y + 306);
+    } else {
+      await p.locator('[data-ctl3d="F2-test"]').click();
+    }
+    await expect(p.locator('.plate3d', { hasText: /^F2 / })).toContainText('TRIPPED');
+    await expect(p.locator('.plate3d', { hasText: 'H2 TRIP' })).toContainText('H2 TRIP LIT');
+    // Back to the drawing: same circuit, same state.
+    await p.getByRole('button', { name: 'Drawing' }).click();
+    await expect(p.locator('[data-part="F2"]')).toContainText('TRIPPED');
+    expect(errors).toEqual([]);
+    await ctx.close();
+    rmSync(dir, { recursive: true, force: true });
+  });
+}

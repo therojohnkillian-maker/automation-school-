@@ -28,3 +28,11 @@ Learners and trainers should know where the simulators differ from real equipmen
 
 ## Safe isolation procedure
 - Follows common UK practice: identify, switch off, lock and tag, prove-test-prove at the point of work, then decide. Your site procedure takes precedence (VERIFY #5).
+
+## 3D equipment view (pilot, DOL starter)
+- Generic devices built from simple shapes in code. They are not models of any manufacturer's product.
+- The 3D view has no electrical logic. It shows what the circuit simulator reports (Q1 handle, KM1 flag, F2 trip flag and dial, push buttons, lamps, motor shaft) and sends button presses back to it.
+- The motor shaft is shown slowed (1.2 rev/s at rated speed), because real speed would strobe on screen. A stalled motor shakes.
+- KM1 terminals 2/4/6 are taken by the overload's plug-in pins, so they are not drawn. The supply, F1 and G1 appear only in the drawing.
+- Terminal labels appear when you zoom in. Tapping one places a meter probe on the same terminal as in the drawing.
+- Motor terminal box: IEC layout (W2 U2 V2 over U1 V1 W1) with delta links fitted. W2, U2 and V2 are shown but cannot be probed in this version.

@@ -234,3 +234,22 @@ table.matrix { border-collapse: collapse; min-width: 100%; }
 .matrix thead th { background: var(--panel); }
 .attempts li { font-size: 0.9rem; margin: 0.25rem 0; }
 .modal { max-height: 90vh; overflow: auto; }
+
+/* ---------- 3D equipment (pilot) ---------- */
+.eq3d { border: 2px solid var(--line); border-radius: var(--radius); background: #fff; }
+.eq3d-host { position: relative; height: min(62vh, 540px); min-height: 320px; overflow: hidden; touch-action: none; }
+.eq3d-host canvas.gl { display: block; }
+.labels3d { position: absolute; inset: 0; pointer-events: none; }
+.t3d { pointer-events: auto; min-height: 26px; min-width: 26px; padding: 0 5px; font-size: 11px; font-weight: 700; border: 1.5px solid var(--ink); border-radius: 6px; background: rgb(255 255 255 / 0.92); color: var(--ink); cursor: pointer; }
+.t3d::before { content: ''; position: absolute; inset: -9px; } /* larger tap area than the label */
+.t3d { position: relative; }
+.t3d-static { cursor: default; opacity: 0.8; }
+.t3d.probe-red { background: #d00000; color: #fff; border-color: #d00000; }
+.t3d.probe-red::after { content: ' +'; }
+.t3d.probe-black { background: #111; color: #fff; }
+.t3d.probe-black::after { content: ' −'; }
+.plate3d { pointer-events: none; font-size: 12px; font-weight: 700; background: rgb(17 20 24 / 0.85); color: #fff; padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
+.eq3d-controls { padding: 0 0.5rem; }
+.eq3d-controls .go { background: #1f7a3a; color: #fff; border-color: #1f7a3a; }
+.eq3d-controls .stop { background: #b3121b; color: #fff; border-color: #b3121b; }
+.eq3d .hint { padding: 0 0.6rem 0.5rem; }

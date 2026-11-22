@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { CircuitCanvas } from '../../components/CircuitCanvas';
 import { Meter, emptyProbes, placeProbe, type ProbeState } from '../../components/Meter';
 import { Markup } from '../../components/Markup';
@@ -14,7 +14,19 @@ import { useSim } from './useSim';
 import type { StepProps } from './stepTypes';
 import { breakScore } from './scoring';
 
+const Equipment3D = lazy(() => import('../equipment3d/Equipment3D'));
+
 type ShowC = Extract<Lesson['show'], { kind: 'circuit' }>;
+
+/** Drawing or 3D view of the same live circuit. 3D is offered for the DOL starter (pilot). */
+function ViewSwitch({ view, setView }: { view: 'drawing' | '3d'; setView: (v: 'drawing' | '3d') => void }) {
+  return (
+    <div className="seg tool-seg" role="group" aria-label="View">
+      <button type="button" aria-pressed={view === 'drawing'} className={view === 'drawing' ? 'on' : ''} onClick={() => setView('drawing')}>Drawing</button>
+      <button type="button" aria-pressed={view === '3d'} className={view === '3d' ? 'on' : ''} onClick={() => setView('3d')}>3D equipment</button>
+    </div>
+  );
+}
 type BuildC = Extract<Lesson['build'], { kind: 'circuit' }>;
 type BreakC = Extract<Lesson['break'], { kind: 'circuit' }>;
 
@@ -41,6 +53,8 @@ export function ShowCircuitStep({ lesson, done }: StepProps) {
   const sim = useSim(() => new Circuit(def), [def]);
   const [probes, setProbes] = useState<ProbeState>(emptyProbes);
   const [doneIdx, setDoneIdx] = useState(0);
+  const has3d = show.circuit === 'dol-starter';
+  const [view, setView] = useState<'drawing' | '3d'>('drawing');
 
   useEffect(() => {
     const task = show.tasks[doneIdx];
@@ -61,7 +75,14 @@ export function ShowCircuitStep({ lesson, done }: StepProps) {
       <Markup text={show.intro} />
       <div className="lab">
         <div className="lab-main">
-          <CircuitCanvas circuit={sim.circuit} version={sim.version} onCommand={(c) => sim.apply((x) => x.command(c))} onTerminal={(r) => setProbes(placeProbe(probes, r))} probes={probes} showLive />
+          {has3d && <ViewSwitch view={view} setView={setView} />}
+          {view === '3d' ? (
+            <Suspense fallback={<p>Loading 3D view…</p>}>
+              <Equipment3D circuit={sim.circuit} version={sim.version} onCommand={(c) => sim.apply((x) => x.command(c))} onTerminal={(r) => setProbes(placeProbe(probes, r))} probes={probes} />
+            </Suspense>
+          ) : (
+            <CircuitCanvas circuit={sim.circuit} version={sim.version} onCommand={(c) => sim.apply((x) => x.command(c))} onTerminal={(r) => setProbes(placeProbe(probes, r))} probes={probes} showLive />
+          )}
           <div className="actions"><button onClick={sim.reset}>Reset circuit</button></div>
         </div>
         <aside className="lab-side">
@@ -184,6 +205,8 @@ export function BreakCircuitStep({ lesson, done, record, recordSession, lastFaul
   const { seed, fault } = run;
   const sim = useSim(() => new Circuit(def, [fault]), [def, fault]);
   const [probes, setProbes] = useState<ProbeState>(emptyProbes);
+  const has3d = br.circuit === 'dol-starter';
+  const [view, setView] = useState<'drawing' | '3d'>('drawing');
   const measurements = useRef<{ red: string; black: string; mode: string; display: string; unsafe: boolean }[]>([]);
   const [unsafe, setUnsafe] = useState(false);
   const [choosing, setChoosing] = useState(false);
@@ -249,7 +272,14 @@ export function BreakCircuitStep({ lesson, done, record, recordSession, lastFaul
       {unsafe && <Notice kind="error">Critical safety error: resistance test on a live circuit. This attempt will fail. Switch off Q1 before any Ω test.</Notice>}
       <div className="lab">
         <div className="lab-main">
-          <CircuitCanvas circuit={sim.circuit} version={sim.version} onCommand={(c) => sim.apply((x) => x.command(c))} onTerminal={onTerminal} probes={probes} />
+          {has3d && <ViewSwitch view={view} setView={setView} />}
+          {view === '3d' ? (
+            <Suspense fallback={<p>Loading 3D view…</p>}>
+              <Equipment3D circuit={sim.circuit} version={sim.version} onCommand={(c) => sim.apply((x) => x.command(c))} onTerminal={onTerminal} probes={probes} />
+            </Suspense>
+          ) : (
+            <CircuitCanvas circuit={sim.circuit} version={sim.version} onCommand={(c) => sim.apply((x) => x.command(c))} onTerminal={onTerminal} probes={probes} />
+          )}
           <div className="actions">
             <button className="primary" onClick={() => setChoosing(true)}>I found the fault…</button>
           </div>
