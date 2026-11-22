@@ -1,7 +1,7 @@
 import Dexie, { type Table } from 'dexie';
 
 /** Bump when the stored shape changes. Exported files carry it too. */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 /** Fields every user record carries, so optional sync is possible later. */
 export interface BaseRecord {
@@ -48,6 +48,7 @@ export class SchoolDB extends Dexie {
   attempts!: Table<AppendOnlyRecord, string>;
   faultSessions!: Table<AppendOnlyRecord, string>;
   signOffs!: Table<AppendOnlyRecord, string>;
+  feedback!: Table<AppendOnlyRecord, string>;
   assignments!: Table<EditableRecord, string>;
   projects!: Table<EditableRecord, string>;
   labSaves!: Table<EditableRecord, string>;
@@ -69,11 +70,13 @@ export class SchoolDB extends Dexie {
       settings: 'key',
       imports: 'fileHash, importedAt',
     });
+    // v2 (app 0.4.0): learner feedback notes for the pilot.
+    this.version(2).stores({ feedback: 'id, profileId, lessonId, createdAt' });
   }
 }
 
 /** Per-learner tables, and how each one merges on import. */
-export const APPEND_ONLY_TABLES = ['attempts', 'faultSessions', 'signOffs'] as const;
+export const APPEND_ONLY_TABLES = ['attempts', 'faultSessions', 'signOffs', 'feedback'] as const;
 export const EDITABLE_TABLES = ['enrolments', 'lessonProgress', 'assignments', 'projects', 'labSaves'] as const;
 export const RECORD_TABLES = [...APPEND_ONLY_TABLES, ...EDITABLE_TABLES] as const;
 export type RecordTableName = (typeof RECORD_TABLES)[number];

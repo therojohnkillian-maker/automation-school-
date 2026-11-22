@@ -253,3 +253,10 @@ table.matrix { border-collapse: collapse; min-width: 100%; }
 .eq3d-controls .go { background: #1f7a3a; color: #fff; border-color: #1f7a3a; }
 .eq3d-controls .stop { background: #b3121b; color: #fff; border-color: #b3121b; }
 .eq3d .hint { padding: 0 0.6rem 0.5rem; }
+
+/* ---------- Pilot ---------- */
+.lesson-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.lesson-head h1 { margin-bottom: 0.4rem; }
+.feedback-btn { min-height: 44px; }
+textarea { width: 100%; font: inherit; padding: 0.6rem 0.8rem; border: 2px solid var(--muted); border-radius: var(--radius); }
+.notes li { margin: 0.5rem 0; }

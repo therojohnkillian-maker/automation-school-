@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { lessonById, moduleById } from '../../content';
 import { STEPS, type StepId } from '../../content/types';
@@ -21,6 +21,7 @@ import {
 import { WhyStep, LearnStep, ShowIsolationStep, BuildIsolationStep, BreakIsolationStep, ProveStep, ApplyStep } from './Steps';
 import { ShowCircuitStep, BuildCircuitStep, BreakCircuitStep } from './CircuitSteps';
 import type { StepProps } from './stepTypes';
+import { FeedbackButton } from '../pilot/Feedback';
 
 export function LessonPage() {
   const { lessonId = '', step } = useParams();
@@ -30,6 +31,7 @@ export function LessonPage() {
   const [progress, setProgress] = useState<LessonProgress | null>(null);
   const [locked, setLocked] = useState(false);
   const [lastFaultId, setLastFaultId] = useState<string | null>(null);
+  const entered = useRef<{ step: string; at: number }>({ step: '', at: Date.now() });
 
   const load = useCallback(async () => {
     if (!lesson) return;
@@ -62,11 +64,18 @@ export function LessonPage() {
   const current = (STEPS.some((s) => s.id === step) ? step : firstOpenStep(progress.steps)) as StepId;
   if (!stepOpen(progress.steps, current)) return <Navigate to={`/learn/${lesson.id}/${firstOpenStep(progress.steps)}`} replace />;
 
+  if (entered.current.step !== current) entered.current = { step: current, at: Date.now() };
+
   const done = async (change: (s: StepStates) => StepStates, goNext = true) => {
     const idx = STEPS.findIndex((s) => s.id === current);
     const next = STEPS[Math.min(idx + 1, STEPS.length - 1)].id;
+    const wasDone = stepDone(progress.steps, current);
     const updated = await updateSteps(profile.id, lesson.id, change, goNext ? next : current);
     setProgress(updated);
+    // Time to first complete each step, for the pilot report.
+    if (!wasDone && stepDone(updated.steps, current)) {
+      await recordAttempt(profile.id, { kind: 'step', lessonId: lesson.id, step: current, seconds: Math.round((Date.now() - entered.current.at) / 1000) });
+    }
     if (goNext && next !== current) {
       navigate(`/learn/${lesson.id}/${next}`);
       window.scrollTo({ top: 0 });
@@ -101,7 +110,10 @@ export function LessonPage() {
   return (
     <main className="lesson">
       <p className="crumbs"><Link to="/learn">Learn</Link> › {mod?.code} {mod?.title}</p>
-      <h1>{lesson.title}</h1>
+      <div className="lesson-head">
+        <h1>{lesson.title}</h1>
+        <FeedbackButton profileId={profile.id} lessonId={lesson.id} step={current} />
+      </div>
       <nav className="stepper" aria-label="Lesson steps">
         {STEPS.map((s, i) => {
           const isDone = stepDone(progress.steps, s.id);

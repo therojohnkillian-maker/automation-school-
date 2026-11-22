@@ -6,6 +6,7 @@ import { buildProgress, importProgress, progressFileName, type ImportResult } fr
 import { useSession } from '../../app/session';
 import { Card, Field, Modal, Notice, downloadText, useAction } from '../../components/ui';
 import { SignOffs } from './SignOffs';
+import { PilotReport } from '../pilot/PilotReport';
 
 export function Trainer() {
   const me = useSession((s) => s.profile)!;
@@ -102,6 +103,8 @@ export function Trainer() {
           </details>
         )}
       </Card>
+
+      <PilotReport people={people} refreshKey={refreshKey} />
 
       {adding && <ProfileForm title="Add apprentice" onClose={() => setAdding(false)} onSaved={refresh} />}
       {editing && (

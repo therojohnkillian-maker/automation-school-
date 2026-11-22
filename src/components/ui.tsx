@@ -87,8 +87,8 @@ export function useAction() {
   return { busy, error, setError, run };
 }
 
-export function downloadText(fileName: string, text: string) {
-  const blob = new Blob([text], { type: 'application/json' });
+export function downloadText(fileName: string, text: string, type = 'application/json') {
+  const blob = new Blob([text], { type });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

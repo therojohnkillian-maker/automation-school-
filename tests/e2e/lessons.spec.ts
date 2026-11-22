@@ -211,6 +211,11 @@ test('apprentice completes M0 and DOL; trainer signs off; progress imports on an
   await answerQuiz(p, m3.prove.questions);
   await p.getByRole('button', { name: /Next: Apply/ }).click();
   await p.getByRole('button', { name: /ask my trainer for sign-off/ }).click();
+  await p.getByRole('button', { name: 'Feedback' }).click();
+  await p.getByLabel('Your note').fill('The unguided wiring took me a while on the phone.');
+  await p.getByRole('button', { name: 'Save note' }).click();
+  await expect(p.getByText('Your note is saved')).toBeVisible();
+  await p.getByRole('dialog').getByRole('button', { name: 'Close' }).click();
 
   // ---- Trainer signs off M0, asks for a redo on DOL ----
   await p.getByRole('button', { name: 'Switch user' }).click();
@@ -234,6 +239,14 @@ test('apprentice completes M0 and DOL; trainer signs off; progress imports on an
   const thandiRow = p.locator('table.matrix tr', { hasText: 'Thandi' });
   await expect(thandiRow).toContainText('Signed off');
   await expect(thandiRow).toContainText('Trainer asked for redo');
+
+  // ---- Pilot report ----
+  await expect(p.locator('.notes')).toContainText('The unguided wiring took me a while on the phone.');
+  const [rep] = await Promise.all([p.waitForEvent('download'), p.getByRole('button', { name: 'Download report' }).click()]);
+  const csv = readFileSync(await rep.path(), 'utf8');
+  expect(csv).toContain('Thandi,Safe isolation and proving dead,Why,');
+  expect(csv).toMatch(/Thandi,"DOL starter: wire, start and fault-find",Build,[\d.]+,3,1,.*holding contact/);
+  expect(csv).toContain('The unguided wiring took me a while on the phone.');
 
   // ---- Export Thandi's progress and import it on another device ----
   const [dl] = await Promise.all([p.waitForEvent('download'), row('Thandi').getByRole('button', { name: 'Export progress' }).click()]);

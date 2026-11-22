@@ -137,7 +137,7 @@ export function BuildCircuitStep({ lesson, progress, done, record }: StepProps) 
 
   const check = async () => {
     const r = runChecks(def, sim.circuit.wires, build.checks);
-    await record({ kind: 'build', lessonId: lesson.id, mode: guided ? 'guided' : 'unguided', passed: r.passed, failure: r.failures[0] ?? null, wires: sim.circuit.wires.length });
+    await record({ kind: 'build', lessonId: lesson.id, mode: guided ? 'guided' : 'unguided', passed: r.passed, failure: r.failures[0] ?? null, wires: sim.circuit.wires.length, hints });
     setResult(r.passed ? { passed: true, text: `All ${r.total} checks passed. The starter works correctly.` } : { passed: false, text: r.failures[0] });
   };
 
