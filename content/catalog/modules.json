@@ -1,0 +1,16 @@
+{
+  "contentVersion": "0.2.0",
+  "modules": [
+    { "id": "m0", "code": "M0", "title": "Safety", "summary": "Safe isolation, lock-off, prove-test-prove, arc flash, permits, hazardous areas.", "required": true, "plannedPhase": 3 },
+    { "id": "m1", "code": "M1", "title": "Electrical fundamentals and drawings", "summary": "AC/DC, three-phase, meters, symbols, schematics, terminal plans.", "required": false, "plannedPhase": 5 },
+    { "id": "m2", "code": "M2", "title": "Instrument wiring", "summary": "PNP/NPN, 2/3/4-wire, 4-20 mA, RTD, thermocouple, scaling, loop checks.", "required": false, "plannedPhase": 5 },
+    { "id": "m3", "code": "M3", "title": "Motor wiring, starting and operation", "summary": "Nameplate, star/delta, DOL, forward/reverse, star-delta, soft starter.", "required": false, "plannedPhase": 3, "note": "The DOL starter lesson is built in Phase 3. The rest of M3 follows in Phase 5." },
+    { "id": "m4", "code": "M4", "title": "Equipment protection", "summary": "Fuses, MCB, MCCB, MPCB, overloads, RCD, earthing, E-stop, STO.", "required": false, "plannedPhase": 5 },
+    { "id": "m5", "code": "M5", "title": "VFDs", "summary": "V/f and vector control, ramps, references, braking, EMC, trips.", "required": false, "plannedPhase": 5 },
+    { "id": "m6", "code": "M6", "title": "PLC programming", "summary": "Scan cycle, I/O, timers, counters, FB/FC/DB, sequences, analog, PID.", "required": false, "plannedPhase": 5 },
+    { "id": "m7", "code": "M7", "title": "Equipment integration", "summary": "I/O lists, handshakes, drive telegrams, HMI, FAT, SAT.", "required": false, "plannedPhase": 5 },
+    { "id": "m8", "code": "M8", "title": "Networking and security", "summary": "IP, PROFINET, Modbus, OPC UA, diagnostics, zones, backups.", "required": false, "plannedPhase": 5 },
+    { "id": "m9", "code": "M9", "title": "Work scheduling", "summary": "Work orders, priorities, labour, spares, permits, shutdowns.", "required": false, "plannedPhase": 5 },
+    { "id": "m10", "code": "M10", "title": "Project planning", "summary": "Scope, WBS, estimates, risks, critical path, change control, handover.", "required": false, "plannedPhase": 5 }
+  ]
+}
