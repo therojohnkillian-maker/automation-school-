@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode, type KeyboardEvent } from 'react';
 import type { Circuit } from '../engines/wiring/circuit';
-import { PART_TERMINALS } from '../engines/wiring/circuit';
+import { terminalsOf } from '../engines/wiring/circuit';
 import type { Command, PartJson } from '../engines/wiring/types';
 
 export interface CanvasProps {
@@ -99,7 +99,7 @@ export function CircuitCanvas(props: CanvasProps) {
           ))}
           {/* terminals on top */}
           {circuit.def.parts.flatMap((p) =>
-            PART_TERMINALS[p.type]
+            terminalsOf(p)
               .filter((t) => p.pins[t])
               .map((t) => {
                 const ref = `${p.id}:${t}`;
@@ -341,9 +341,35 @@ function PartView(props: CanvasProps & { part: PartJson }) {
             <line x1={x} y1={m + 12} x2={x} y2={B[1]} stroke={INK} strokeWidth={2.5} />
             <circle cx={x} cy={m} r={12} fill={st.lit ? '#ffd23f' : '#fff'} stroke={INK} strokeWidth={2.5} />
             <path d={`M${x - 8},${m - 8} L${x + 8},${m + 8} M${x + 8},${m - 8} L${x - 8},${m + 8}`} stroke={INK} strokeWidth={2} />
-            <text x={x + 18} y={m + 22} className="state">{st.burnt ? 'BURNT' : st.lit ? 'LIT' : 'off'}</text>
+            <text x={x - 18} y={m + 5} textAnchor="end" className="state">{st.burnt ? 'BURNT' : st.lit ? 'LIT' : 'off'}</text>
           </g>,
         );
+      }
+      break;
+    }
+    case 'resistor': {
+      box('1', '2', false, `${p.params?.ohms ?? '?'} Ω`);
+      break;
+    }
+    case 'sw_no': {
+      contact('13', '14', !!st.on);
+      if (ctl) {
+        const A = P('13')!;
+        els.push(
+          <Btn key="sw" x={A[0] - 120} y={A[1] + 2} w={86} label={st.on ? 'Turn OFF' : 'Turn ON'} kind={st.on ? 'warn' : 'normal'} enabled
+            aria={`${p.label}: turn ${st.on ? 'off' : 'on'}`} testId={`${p.id}:toggle`} onClick={() => cmd({ kind: 'switch', part: p.id, on: !st.on })} />,
+        );
+      }
+      els.push(<text key="swst" x={(P('14')?.[0] ?? lx) + 10} y={(P('14')?.[1] ?? ly) + 20} className="state">{st.on ? 'ON' : 'OFF'}</text>);
+      break;
+    }
+    case 'tstrip': {
+      const pts = Object.values(p.pins);
+      if (pts.length) {
+        const xs = pts.map((q) => q[0]);
+        const y = pts[0][1];
+        els.push(<rect key="strip" x={Math.min(...xs) - 18} y={y - 14} width={Math.max(...xs) - Math.min(...xs) + 36} height={28} rx={3} fill="#e8eefb" stroke={INK} strokeWidth={2} />);
+        for (const q of pts) els.push(<line key={`d${q[0]}`} x1={q[0] + 20} y1={y - 14} x2={q[0] + 20} y2={y + 14} stroke={INK} strokeWidth={1} />);
       }
       break;
     }

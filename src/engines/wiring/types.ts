@@ -11,7 +11,10 @@ export type PartType =
   | 'pb_no'
   | 'pb_nc'
   | 'lamp24'
-  | 'motor3';
+  | 'motor3'
+  | 'resistor'
+  | 'sw_no'
+  | 'tstrip';
 
 export interface PartJson {
   id: string;
@@ -34,6 +37,10 @@ export interface PartJson {
     setting?: number;
     /** Plant tag shown on isolators, e.g. "P-101 PUMP". */
     tag?: string;
+    /** Resistor value in ohms. */
+    ohms?: number;
+    /** Number of terminals on a terminal strip (named 1..count). */
+    count?: number;
   };
   init?: { on?: boolean; tripped?: boolean };
 }
@@ -65,6 +72,7 @@ export type FaultJson =
   | { id: string; kind: 'contact-open'; part: string; a: string; b: string; report: string }
   | { id: string; kind: 'contact-closed'; part: string; a: string; b: string; report: string }
   | { id: string; kind: 'coil-open'; part: string; report: string }
+  | { id: string; kind: 'load-open'; part: string; report: string }
   | { id: string; kind: 'labels-swapped'; parts: [string, string]; report: string }
   | { id: string; kind: 'tester-faulty'; report: string };
 

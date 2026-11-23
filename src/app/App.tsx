@@ -11,6 +11,7 @@ import { Trainer } from '../features/trainer/Trainer';
 import { Settings } from '../features/settings/Settings';
 import { LearnList } from '../features/learn/LearnList';
 import { LessonPage } from '../features/learn/LessonPage';
+import { Placement } from '../features/learn/Placement';
 import { Notice } from '../components/ui';
 
 export function App() {
@@ -55,6 +56,7 @@ export function App() {
           <Route path="/learn" element={<LearnList />} />
           <Route path="/learn/:lessonId" element={<LessonPage />} />
           <Route path="/learn/:lessonId/:step" element={<LessonPage />} />
+          <Route path="/placement/:moduleId" element={<Placement />} />
           {profile.role === 'trainer' && <Route path="/trainer" element={<Trainer />} />}
           <Route
             path="/settings"

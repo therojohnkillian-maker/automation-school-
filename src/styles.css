@@ -260,3 +260,10 @@ table.matrix { border-collapse: collapse; min-width: 100%; }
 .feedback-btn { min-height: 44px; }
 textarea { width: 100%; font: inherit; padding: 0.6rem 0.8rem; border: 2px solid var(--muted); border-radius: var(--radius); }
 .notes li { margin: 0.5rem 0; }
+.readings { padding-left: 1.2rem; }
+.readings li { margin: 0.6rem 0; }
+.readings li.done label { color: var(--muted); }
+.reading-row { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.3rem; }
+.reading-row input { max-width: 8rem; }
+.unit { font-weight: 700; min-width: 1.5rem; }
+.placement-row { margin-top: 0.6rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }

@@ -9,6 +9,7 @@ export const STATUS_CHIP: Record<LessonStatus, { status: Status; label: string }
   locked: { status: 'locked', label: 'Locked' },
   new: { status: 'open', label: 'Not started' },
   progress: { status: 'progress', label: 'In progress' },
+  placed: { status: 'passed', label: 'Placed out by test' },
   awaiting: { status: 'awaiting', label: 'Awaiting sign-off' },
   redo: { status: 'failed', label: 'Trainer asked for redo' },
   signed: { status: 'signed', label: 'Signed off' },
@@ -52,6 +53,12 @@ export function LearnList() {
                 );
               })}
             </ul>
+          )}
+          {m.placement && m.lessons.length > 0 && m.lessons.some((id) => ['new', 'progress'].includes(lessonStatus(id, all))) && (
+            <p className="placement-row">
+              <span className="hint">Already know this module?</span>{' '}
+              <Link className="button" to={`/placement/${m.id}`}>Take the placement test</Link>
+            </p>
           )}
           {m.note && <p className="hint">{m.note}</p>}
         </Card>

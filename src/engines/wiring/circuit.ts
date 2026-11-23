@@ -61,7 +61,16 @@ export const PART_TERMINALS: Record<PartType, string[]> = {
   pb_nc: ['11', '12'],
   lamp24: ['X1', 'X2'],
   motor3: ['U1', 'V1', 'W1', 'PE'],
+  resistor: ['1', '2'],
+  sw_no: ['13', '14'],
+  tstrip: [], // named 1..count, see terminalsOf
 };
+
+/** The terminals a part has. Terminal strips are numbered 1..count. */
+export function terminalsOf(p: PartJson): string[] {
+  if (p.type === 'tstrip') return Array.from({ length: p.params?.count ?? 0 }, (_, i) => String(i + 1));
+  return PART_TERMINALS[p.type];
+}
 
 const COIL_OHMS = 120; // 24 V DC coil, about 5 W
 const LAMP_OHMS = 576; // 24 V, 1 W
@@ -144,7 +153,7 @@ export class Circuit {
   hasTerminal(ref: string): boolean {
     const [pid, term] = ref.split(':');
     const p = this.parts.get(pid);
-    return !!p && PART_TERMINALS[p.def.type].includes(term);
+    return !!p && terminalsOf(p.def).includes(term);
   }
 
   addWire(a: string, b: string): WireJson | null {
@@ -191,6 +200,11 @@ export class Circuit {
         if (p.def.type === 'isolator3' && cmd.on && p.locked) {
           this.note(`${name} is locked off. Remove the lock before switching on.`);
           return;
+        }
+        if (p.def.type === 'sw_no') {
+          p.on = cmd.on;
+          this.note(`${name} switched ${cmd.on ? 'on' : 'off'}.`);
+          break;
         }
         if (['isolator3', 'mpcb3', 'mcb2'].includes(p.def.type)) {
           if (cmd.on && p.tripped) this.note(`${name} reset and switched on.`);
@@ -253,7 +267,7 @@ export class Circuit {
   }
 
   private coilOpen(id: string) {
-    return this.faults.some((f) => f.kind === 'coil-open' && f.part === id);
+    return this.faults.some((f) => (f.kind === 'coil-open' || f.kind === 'load-open') && f.part === id);
   }
 
   private links(): [string, string][] {
@@ -283,6 +297,7 @@ export class Circuit {
         add(p.tripped, ['97', '98']);
       } else if (t === 'pb_no') add(p.pressed, ['13', '14']);
       else if (t === 'pb_nc') add(!p.pressed, ['11', '12']);
+      else if (t === 'sw_no') add(p.on, ['13', '14']);
       for (const [a, b] of all) {
         const k = `${id}:${a}-${b}`;
         const closed = (pairs.some(([x, y]) => x === a && y === b) && !stuckOpen.has(k)) || stuckClosed.has(k);
@@ -297,7 +312,8 @@ export class Circuit {
     const out: [string, string, number][] = [];
     for (const [id, p] of this.parts) {
       if (p.def.type === 'contactor' && !p.burnt && !this.coilOpen(id)) out.push([key(id, 'A1'), key(id, 'A2'), COIL_OHMS]);
-      if (p.def.type === 'lamp24' && !p.burnt) out.push([key(id, 'X1'), key(id, 'X2'), LAMP_OHMS]);
+      if (p.def.type === 'lamp24' && !p.burnt && !this.coilOpen(id)) out.push([key(id, 'X1'), key(id, 'X2'), LAMP_OHMS]);
+      if (p.def.type === 'resistor' && !this.coilOpen(id)) out.push([key(id, '1'), key(id, '2'), p.def.params?.ohms ?? 1000]);
       if (p.def.type === 'motor3') {
         const r = p.def.params?.windingOhms ?? 6;
         out.push([key(id, 'U1'), key(id, 'V1'), r], [key(id, 'V1'), key(id, 'W1'), r], [key(id, 'W1'), key(id, 'U1'), r]);
@@ -308,7 +324,7 @@ export class Circuit {
 
   private analyse(): Analysis {
     const uf = new UnionFind();
-    for (const [id, p] of this.parts) for (const t of PART_TERMINALS[p.def.type]) uf.find(key(id, t));
+    for (const [id, p] of this.parts) for (const t of terminalsOf(p.def)) uf.find(key(id, t));
     for (const [a, b] of this.links()) uf.union(a, b);
 
     const nodeSrc = new Map<string, Source[]>();
@@ -338,7 +354,7 @@ export class Circuit {
   private nodal(uf: UnionFind, nodeSrc: Map<string, Source[]>): Map<string, Pot | undefined> {
     const pots = new Map<string, Pot | undefined>();
     const roots = new Set<string>();
-    for (const [id, p] of this.parts) for (const t of PART_TERMINALS[p.def.type]) roots.add(uf.find(key(id, t)));
+    for (const [id, p] of this.parts) for (const t of terminalsOf(p.def)) roots.add(uf.find(key(id, t)));
     for (const r of roots) pots.set(r, nodeSrc.has(r) ? SOURCE_POT[nodeSrc.get(r)![0]] : undefined);
 
     const edges = this.loads()
@@ -691,9 +707,12 @@ export class Circuit {
       case 'pb_nc':
         s.pressed = p.pressed;
         break;
+      case 'sw_no':
+        s.on = p.on;
+        break;
       case 'lamp24': {
         const vv = this.voltage(key(id, 'X1'), key(id, 'X2'));
-        s.lit = !p.burnt && Math.abs(vv.dc) >= PICK_UP_V;
+        s.lit = !p.burnt && !this.coilOpen(id) && Math.abs(vv.dc) >= PICK_UP_V;
         s.burnt = p.burnt;
         break;
       }

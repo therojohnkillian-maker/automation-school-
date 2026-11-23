@@ -7,6 +7,8 @@ import { STEPS } from '../content/types';
 export type ApplyStatus = 'not-requested' | 'requested' | 'signed' | 'redo';
 
 export interface StepStates {
+  /** Passed the module's placement test: the lesson counts as passed, and every step stays open for review. */
+  placedOut?: boolean;
   why?: boolean;
   learn?: boolean;
   show?: boolean;
@@ -71,6 +73,7 @@ export function stepDone(s: StepStates, step: StepId): boolean {
 
 /** A step is open when every earlier step is done. */
 export function stepOpen(s: StepStates, step: StepId): boolean {
+  if (s.placedOut) return true;
   const i = STEPS.findIndex((x) => x.id === step);
   return STEPS.slice(0, i).every((x) => stepDone(s, x.id));
 }
@@ -80,9 +83,9 @@ export function firstOpenStep(s: StepStates): StepId {
 }
 
 /** Passed in the app: fault-finding and the scored test. Signing off is separate. */
-export const appPassed = (s?: StepStates) => !!s?.break?.passed && !!s?.prove?.passed;
+export const appPassed = (s?: StepStates) => !!s?.placedOut || (!!s?.break?.passed && !!s?.prove?.passed);
 
-export type LessonStatus = 'locked' | 'new' | 'progress' | 'awaiting' | 'redo' | 'signed';
+export type LessonStatus = 'locked' | 'new' | 'progress' | 'placed' | 'awaiting' | 'redo' | 'signed';
 
 export function lessonStatus(lessonId: string, all: LessonProgress[]): LessonStatus {
   const lesson = lessonById(lessonId)!;
@@ -94,6 +97,7 @@ export function lessonStatus(lessonId: string, all: LessonProgress[]): LessonSta
   if (a === 'signed') return 'signed';
   if (a === 'requested') return 'awaiting';
   if (a === 'redo') return 'redo';
+  if (p.steps.placedOut) return 'placed';
   return 'progress';
 }
 
@@ -164,4 +168,9 @@ export async function signOff(input: SignOffInput) {
 export async function awaitingSignOff() {
   const rows = (await db.lessonProgress.toArray()).filter((r) => !r.deleted) as unknown as LessonProgress[];
   return rows.filter((r) => r.steps.apply?.status === 'requested');
+}
+
+/** Mark every lesson of a module as placed out after a passed placement test. */
+export async function placeOut(profileId: string, lessonIds: string[]) {
+  for (const id of lessonIds) await updateSteps(profileId, id, (s) => ({ ...s, placedOut: true }));
 }

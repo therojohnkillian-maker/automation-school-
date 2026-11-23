@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import dolJson from '../../content/circuits/dol-starter.json';
 import { buildEquipment } from '../../src/features/equipment3d/models';
-import { Circuit, PART_TERMINALS } from '../../src/engines/wiring/circuit';
+import { Circuit, terminalsOf } from '../../src/engines/wiring/circuit';
 import type { CircuitJson, PartStatus } from '../../src/engines/wiring/types';
 
 const dol = dolJson as unknown as CircuitJson;
@@ -17,7 +17,7 @@ describe('3D equipment model', () => {
       const [pid, term] = t.ref!.split(':');
       const part = dol.parts.find((p) => p.id === pid);
       expect(part, t.ref!).toBeTruthy();
-      expect(PART_TERMINALS[part!.type]).toContain(term);
+      expect(terminalsOf(part!)).toContain(term);
     }
   });
 

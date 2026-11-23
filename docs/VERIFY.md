@@ -15,4 +15,8 @@ Items that must be checked before technicians train on the related content.
 | 9 | DOL bench checklist: continuity and insulation resistance tests "to the site procedure" (test voltage not stated in the app) | M3 Apply | Open |
 | 10 | Hazardous area zone definitions (Zone 0/1/2, 20/21/22) as worded in M0 | M0 | Open |
 | 11 | M0 wording on live work, permits and arc flash | M0 | Open |
+| 12 | M1: CAT III / CAT IV meter guidance as worded | M1 L1 | Open |
+| 13 | M1: "230 V nominal is often 235–245 V on site" | M1 L1 | Open |
+| 14 | M1: IEC 81346-2 letter codes (P for lamps, Q for power switching) and older codes (KM, H) as described | M1 L2 | Open |
+| 15 | M1: cross-reference format "/3.4" (page.column) described as common, not universal | M1 L2 | Open |
 

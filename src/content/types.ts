@@ -20,6 +20,7 @@ const expectation = z.union([
   z.object({ part: z.string(), pressed: z.boolean() }).strict(),
   z.object({ part: z.string(), motor: z.enum(['running', 'stopped-or-coasting', 'not-powered']), direction: z.enum(['forward', 'reverse']).optional() }).strict(),
   z.object({ part: z.string(), feedsMotor: z.string() }).strict(),
+  z.object({ connected: z.tuple([z.string(), z.string()]) }).strict(),
   z.object({ noShorts: z.literal(true) }).strict(),
   z.object({ stable: z.literal(true) }).strict(),
 ]);
@@ -36,6 +37,7 @@ const fault = z.discriminatedUnion('kind', [
   z.object({ id: z.string(), kind: z.literal('contact-open'), part: z.string(), a: z.string(), b: z.string(), report: z.string() }),
   z.object({ id: z.string(), kind: z.literal('contact-closed'), part: z.string(), a: z.string(), b: z.string(), report: z.string() }),
   z.object({ id: z.string(), kind: z.literal('coil-open'), part: z.string(), report: z.string() }),
+  z.object({ id: z.string(), kind: z.literal('load-open'), part: z.string(), report: z.string() }),
   z.object({ id: z.string(), kind: z.literal('labels-swapped'), parts: z.tuple([z.string(), z.string()]), report: z.string() }),
   z.object({ id: z.string(), kind: z.literal('tester-faulty'), report: z.string() }),
 ]);
@@ -59,8 +61,22 @@ const question = z.object({
   critical: z.boolean().optional(),
 });
 
+/** A measurement the learner makes and types in. The expected value is calculated by the simulator after `setup`. */
+const measureTask = z.object({
+  id: z.string(),
+  text: z.string(),
+  a: z.string(),
+  b: z.string(),
+  mode: z.enum(['VAC', 'VDC', 'OHM']),
+  setup: z.array(command).default([]),
+  unit: z.string(),
+  tolerancePct: z.number().positive().default(5),
+});
+
 const breakCommon = {
   intro: z.string(),
+  /** Functional checks used to prove every fault has a symptom (defaults to the build checks). */
+  symptomChecks: z.array(checkStep).optional(),
   faults: z.array(fault).min(3),
   parMeasurements: z.number().int().positive(),
   parSeconds: z.number().int().positive(),
@@ -102,6 +118,12 @@ export const lessonSchema = z.object({
       unguided: z.object({ intro: z.string(), removeWires: z.array(z.string()).min(1) }),
     }),
     z.object({ kind: z.literal('isolation'), scenario, guided: z.object({ intro: z.string() }), unguided: z.object({ intro: z.string() }) }),
+    z.object({
+      kind: z.literal('measure'),
+      circuit: z.string(),
+      guided: z.object({ intro: z.string(), tasks: z.array(measureTask).min(3) }),
+      unguided: z.object({ intro: z.string(), tasks: z.array(measureTask).min(3) }),
+    }),
   ]),
   break: z.discriminatedUnion('kind', [
     z.object({ kind: z.literal('circuit'), circuit: z.string(), ...breakCommon }),
@@ -113,6 +135,7 @@ export const lessonSchema = z.object({
 
 export type Lesson = z.infer<typeof lessonSchema>;
 export type Question = z.infer<typeof question>;
+export type MeasureTask = z.infer<typeof measureTask>;
 export type ShowTask = Extract<Lesson['show'], { kind: 'circuit' }>['tasks'][number];
 export type StepId = 'why' | 'learn' | 'show' | 'build' | 'break' | 'prove' | 'apply';
 export const STEPS: { id: StepId; label: string; short: string }[] = [

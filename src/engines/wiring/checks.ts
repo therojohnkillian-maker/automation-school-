@@ -13,6 +13,7 @@ export type Expectation =
   | { part: string; pressed: boolean }
   | { part: string; motor: 'running' | 'stopped-or-coasting' | 'not-powered'; direction?: 'forward' | 'reverse' }
   | { part: string; feedsMotor: string }
+  | { connected: [string, string] }
   | { noShorts: true }
   | { stable: true };
 
@@ -34,6 +35,7 @@ export function holds(c: Circuit, e: Expectation): boolean {
     return ![...c.parts.values()].some((p) => (p.def.type === 'mcb2' || p.def.type === 'mpcb3' || p.def.type === 'psu24') && p.tripped) && !c.supplyFault;
   }
   if ('stable' in e) return !c.unstable;
+  if ('connected' in e) return c.nodeOf(e.connected[0]) === c.nodeOf(e.connected[1]);
   if ('feedsMotor' in e) return c.motorFedBy(e.part) === e.feedsMotor;
   const s = c.status(e.part);
   if ('energised' in e) return !!s.energised === e.energised;

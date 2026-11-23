@@ -1,0 +1,198 @@
+{
+ "id": "m1-symbols",
+ "version": "1.0.0",
+ "title": "Common IEC symbols used in this course",
+ "size": [
+  960,
+  250
+ ],
+ "parts": [
+  {
+   "id": "S1",
+   "type": "pb_no",
+   "label": "Push button, NO",
+   "pins": {
+    "13": [
+     60,
+     110
+    ],
+    "14": [
+     60,
+     160
+    ]
+   },
+   "labelAt": [
+    20,
+    210
+   ]
+  },
+  {
+   "id": "S2",
+   "type": "pb_nc",
+   "label": "Push button, NC",
+   "pins": {
+    "11": [
+     200,
+     110
+    ],
+    "12": [
+     200,
+     160
+    ]
+   },
+   "labelAt": [
+    160,
+    210
+   ]
+  },
+  {
+   "id": "S3",
+   "type": "sw_no",
+   "label": "Switch (stays put)",
+   "pins": {
+    "13": [
+     340,
+     110
+    ],
+    "14": [
+     340,
+     160
+    ]
+   },
+   "labelAt": [
+    290,
+    210
+   ]
+  },
+  {
+   "id": "K1",
+   "type": "contactor",
+   "label": "Coil and its NO / NC contacts",
+   "pins": {
+    "A1": [
+     480,
+     110
+    ],
+    "A2": [
+     480,
+     160
+    ],
+    "13": [
+     560,
+     110
+    ],
+    "14": [
+     560,
+     160
+    ],
+    "21": [
+     640,
+     110
+    ],
+    "22": [
+     640,
+     160
+    ]
+   },
+   "labelAt": [
+    440,
+    210
+   ]
+  },
+  {
+   "id": "H1",
+   "type": "lamp24",
+   "label": "Lamp",
+   "pins": {
+    "X1": [
+     740,
+     110
+    ],
+    "X2": [
+     740,
+     160
+    ]
+   },
+   "labelAt": [
+    720,
+    210
+   ]
+  },
+  {
+   "id": "R1",
+   "type": "resistor",
+   "label": "Resistor",
+   "params": {
+    "ohms": 470
+   },
+   "pins": {
+    "1": [
+     840,
+     110
+    ],
+    "2": [
+     840,
+     160
+    ]
+   },
+   "labelAt": [
+    810,
+    210
+   ]
+  },
+  {
+   "id": "X1",
+   "type": "tstrip",
+   "label": "Terminal strip X1",
+   "params": {
+    "count": 3
+   },
+   "pins": {
+    "1": [
+     60,
+     40
+    ],
+    "2": [
+     110,
+     40
+    ],
+    "3": [
+     160,
+     40
+    ]
+   },
+   "labelAt": [
+    220,
+    45
+   ]
+  },
+  {
+   "id": "F1",
+   "type": "mcb2",
+   "label": "Circuit breaker (2-pole)",
+   "pins": {
+    "1": [
+     460,
+     30
+    ],
+    "3": [
+     510,
+     30
+    ],
+    "2": [
+     460,
+     70
+    ],
+    "4": [
+     510,
+     70
+    ]
+   },
+   "labelAt": [
+    560,
+    55
+   ]
+  }
+ ],
+ "wires": []
+}

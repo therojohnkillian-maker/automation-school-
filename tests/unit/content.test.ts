@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { circuits, glossary, lessons, catalog, circuit } from '../../src/content';
 import { runChecks } from '../../src/engines/wiring/checks';
-import { PART_TERMINALS } from '../../src/engines/wiring/circuit';
+import { terminalsOf } from '../../src/engines/wiring/circuit';
 import { IsolationSession } from '../../src/engines/safety/isolation';
 import type { FaultJson } from '../../src/engines/wiring/types';
+import { expectedFor } from '../../src/features/learn/MeasureStep';
+import { Circuit as Sim } from '../../src/engines/wiring/circuit';
 
 const allText = (o: unknown): string[] =>
   typeof o === 'string' ? [o] : Array.isArray(o) ? o.flatMap(allText) : o && typeof o === 'object' ? Object.values(o).flatMap(allText) : [];
@@ -17,7 +19,7 @@ describe('circuits', () => {
           const [pid, t] = end.split(':');
           const p = parts.get(pid);
           expect(p, `${w.id} → ${end}`).toBeTruthy();
-          expect(PART_TERMINALS[p!.type]).toContain(t);
+          expect(terminalsOf(p!)).toContain(t);
           expect(p!.pins[t], `${end} has no drawn position`).toBeTruthy();
         }
       }
@@ -71,11 +73,24 @@ describe('lessons', () => {
         });
       }
 
-      if (l.break.kind === 'circuit' && l.build.kind === 'circuit') {
+      if (l.build.kind === 'measure') {
+        const b = l.build;
+        it('every measurement task has a real, safe expected value', () => {
+          const def = circuit(b.circuit);
+          for (const t of [...b.guided.tasks, ...b.unguided.tasks]) {
+            const sim = new Sim(def);
+            expect(sim.hasTerminal(t.a) && sim.hasTerminal(t.b), `${t.id} points`).toBe(true);
+            expect(expectedFor(b.circuit, t), `${t.id} expected value`).not.toBeNull();
+          }
+        });
+      }
+
+      if (l.break.kind === 'circuit' && (l.break.symptomChecks || l.build.kind === 'circuit')) {
         const br = l.break;
-        const checks = l.build.checks;
-        it('every fault is diagnosable: it changes how the starter behaves', () => {
+        const checks = br.symptomChecks ?? (l.build as unknown as { checks: never[] }).checks;
+        it('every fault is diagnosable: it changes how the circuit behaves', () => {
           const def = circuit(br.circuit);
+          expect(runChecks(def, def.wires, checks).passed, 'healthy circuit must pass the symptom checks').toBe(true);
           for (const f of br.faults) {
             const r = runChecks(def, def.wires, checks, [f as FaultJson]);
             expect(r.passed, `fault ${f.id} has no symptom`).toBe(false);

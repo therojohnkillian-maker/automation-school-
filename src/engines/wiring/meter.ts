@@ -39,3 +39,19 @@ export function indicate(c: Circuit, a: string, b: string, testerWorks: boolean)
   const band = [12, 24, 50, 120, 230, 400, 690].reduce((best, b) => (volts >= b * 0.85 ? b : best), 12);
   return { volts, display: `${band} V ${v.ac >= Math.abs(v.dc) ? '~' : '='} lit` };
 }
+
+/** The number a meter would show, for checking a typed-in reading. null = open circuit (OL); 'unsafe' = Ω on a live circuit. */
+export function measureValue(c: Circuit, red: string, black: string, mode: MeterMode): number | null | 'unsafe' {
+  if (mode === 'OHM') {
+    const r = c.resistance(red, black);
+    if (r.live) return 'unsafe';
+    return r.ohms === null ? null : Math.round(r.ohms * 10) / 10;
+  }
+  const v = c.voltage(red, black);
+  return mode === 'VAC' ? Math.round(v.ac) : Math.round(v.dc * 10) / 10;
+}
+
+/** Is a typed reading close enough? Within the percentage, or 2 units, whichever is larger. Polarity is ignored. */
+export function readingMatches(typed: number, expected: number, tolerancePct: number): boolean {
+  return Math.abs(Math.abs(typed) - Math.abs(expected)) <= Math.max((Math.abs(expected) * tolerancePct) / 100, 2);
+}

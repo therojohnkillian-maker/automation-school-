@@ -1,0 +1,193 @@
+{
+  "id": "m1-l1",
+  "moduleId": "m1",
+  "version": "1.0.0",
+  "title": "Electrical basics and safe measurement",
+  "minutes": 50,
+  "summary": "Voltage, current, resistance and power, AC and three-phase supplies, and how to measure them safely with a multimeter.",
+  "requires": ["m0-l1"],
+  "why": {
+    "text": "A panel heater at the fictional Riverside bottling plant has stopped working, and so has the lamp next to it. Before you can fix anything, you need to know what the readings on your meter **mean**: is 24 V right here? Should this read 400 V or 230 V? Is 0 V good news or bad news?\n\nEvery fault you find in this course is found by measuring and comparing with what should be there. This lesson gives you the numbers to expect and the safe way to get them."
+  },
+  "learn": {
+    "cards": [
+      {
+        "title": "Voltage, current and resistance",
+        "text": "- **Voltage (V, volts)** is the electrical push between two points. You always measure it **between two points**.\n- **Current (I, amps)** is the flow of charge through a conductor. It only flows around a complete circuit.\n- **Resistance (R, ohms, Ω)** is how much a part opposes the flow.\n\n**Ohm's law** links them: **V = I × R**, so **I = V ÷ R**.\n\nExample: the 24 V coil of a contactor with 120 Ω resistance draws 24 ÷ 120 = **0.2 A**."
+      },
+      {
+        "title": "Power",
+        "text": "Power (P, watts) is how fast energy is used: **P = V × I**.\n\nThe 120 Ω coil on 24 V uses 24 × 0.2 = **4.8 W**. The R1 heater in this lesson is 470 Ω on 24 V: about 0.05 A and 1.2 W.\n\nFor a three-phase motor, P = √3 × V × I × power factor. You will use that in the motor lessons."
+      },
+      {
+        "title": "Series and parallel",
+        "text": "- In **series** (one after another) the same current flows through each part. Resistances add: 100 Ω + 100 Ω = 200 Ω.\n- In **parallel** (side by side) each part gets the same voltage. The total resistance is lower than the smallest: two 100 Ω in parallel = 50 Ω.\n\nA switch is in series with its load. An open switch has the **full supply voltage across it**, because no current flows and the load drops no voltage. That is a key fault-finding fact."
+      },
+      {
+        "title": "AC and DC",
+        "text": "**DC** (direct current) stays one polarity: batteries and the 24 V DC control supplies in this course.\n\n**AC** (alternating current) reverses direction 50 times a second in the UK (50 Hz). Meters show AC as an **RMS** value: 230 V AC RMS heats a heater the same as 230 V DC would.\n\nSet the meter to **V~** for AC and **V=** for DC. A true-RMS meter on the wrong setting reads about zero, which can fool you into thinking a live circuit is dead."
+      },
+      {
+        "title": "The three-phase supply",
+        "text": "UK industrial supplies are **230/400 V, 50 Hz, three-phase**: three lines (L1, L2, L3), a neutral (N) and protective earth (PE).\n\n- Line to line (L1–L2): **400 V**\n- Line to neutral or line to earth: **230 V**\n- Neutral to earth: **close to 0 V** in a healthy system\n\nThe three phases are 120° apart, so line voltage = √3 × phase voltage: 1.732 × 230 ≈ 400 V. Real readings vary a little; 230 V nominal is often 235–245 V on site."
+      },
+      {
+        "title": "Using a multimeter safely",
+        "text": "- Use a meter and leads with a **category (CAT) rating** for where you are working: CAT III for distribution boards and fixed equipment, CAT IV at the supply origin. Probes and leads must follow [[GS38]].\n- Check the meter on a known source before and after use.\n- **Voltage**: measure in parallel, across the two points.\n- **Resistance and continuity**: only on circuits that are **isolated and proved dead**. The meter supplies its own small voltage; a live circuit can destroy it.\n- **Current**: use a **clamp meter** around **one** conductor. Clamping a whole cable reads zero because the currents cancel. Never put a multimeter's current range across a supply."
+      },
+      {
+        "title": "What readings tell you",
+        "text": "- **Supply voltage across a load, but the load does nothing**: the load itself has failed (open filament, burnt coil).\n- **Supply voltage across an open switch or contact**: the circuit is good up to there; the switch is open.\n- **0 V across a load that should be on**: the supply is not reaching it. Look further back.\n- **0 Ω** through a closed contact, **OL** (open) through an open one. A coil reads its resistance, for example 120 Ω.",
+        "circuit": "m1-measure"
+      }
+    ]
+  },
+  "show": {
+    "kind": "circuit",
+    "circuit": "m1-measure",
+    "intro": "This circuit is healthy and switched on. Do each task with the meter and notice what each reading tells you.",
+    "tasks": [
+      { "id": "t1", "text": "Turn S1 ON. The lamp H1 lights.", "when": [{ "part": "H1", "lit": true }] },
+      { "id": "t2", "text": "Measure line to line at the supply: SUP L1 to L2, meter on V~.", "measure": { "a": "SUP:L1", "b": "SUP:L2", "mode": "VAC" } },
+      { "id": "t3", "text": "Measure line to neutral: SUP L1 to N, meter on V~.", "measure": { "a": "SUP:L1", "b": "SUP:N", "mode": "VAC" } },
+      { "id": "t4", "text": "Measure the 24 V supply: G1 + to −, meter on V=.", "measure": { "a": "G1:P", "b": "G1:M", "mode": "VDC" } },
+      { "id": "t5", "text": "Now measure G1 + to − on V~. A true-RMS meter shows about 0 V on DC: wrong mode, misleading reading.", "measure": { "a": "G1:P", "b": "G1:M", "mode": "VAC" } }
+    ]
+  },
+  "build": {
+    "kind": "measure",
+    "circuit": "m1-measure",
+    "guided": {
+      "intro": "Make each measurement and type the reading. The test points are given. Operate the switches as each task says.",
+      "tasks": [
+        { "id": "g1", "text": "Line to line, SUP L1 to L2 (V~)", "a": "SUP:L1", "b": "SUP:L2", "mode": "VAC", "unit": "V" },
+        { "id": "g2", "text": "Line to earth, SUP L1 to PE (V~)", "a": "SUP:L1", "b": "SUP:PE", "mode": "VAC", "unit": "V" },
+        { "id": "g3", "text": "Neutral to earth, SUP N to PE (V~)", "a": "SUP:N", "b": "SUP:PE", "mode": "VAC", "unit": "V" },
+        { "id": "g4", "text": "24 V supply, G1 + to − (V=)", "a": "G1:P", "b": "G1:M", "mode": "VDC", "unit": "V" },
+        { "id": "g5", "text": "Across lamp H1 (X1 to X2) with S1 ON (V=)", "a": "H1:X1", "b": "H1:X2", "mode": "VDC", "unit": "V", "setup": [{ "kind": "switch", "part": "S1", "on": true }] }
+      ]
+    },
+    "unguided": {
+      "intro": "Now find the test points yourself. Set the switches as each task says. Isolate before any resistance measurement.",
+      "tasks": [
+        { "id": "u1", "text": "Voltage across switch S1 when it is OFF", "a": "S1:13", "b": "S1:14", "mode": "VDC", "unit": "V", "setup": [{ "kind": "switch", "part": "S1", "on": false }] },
+        { "id": "u2", "text": "Voltage across switch S1 when it is ON", "a": "S1:13", "b": "S1:14", "mode": "VDC", "unit": "V", "setup": [{ "kind": "switch", "part": "S1", "on": true }] },
+        { "id": "u3", "text": "Resistance of heater R1, with F1 OFF and S1 OFF", "a": "R1:1", "b": "R1:2", "mode": "OHM", "unit": "Ω", "setup": [{ "kind": "switch", "part": "F1", "on": false }, { "kind": "switch", "part": "S1", "on": false }] },
+        { "id": "u4", "text": "Resistance of lamp H1, with F1 OFF and S1 OFF", "a": "H1:X1", "b": "H1:X2", "mode": "OHM", "unit": "Ω", "setup": [{ "kind": "switch", "part": "F1", "on": false }, { "kind": "switch", "part": "S1", "on": false }] }
+      ]
+    }
+  },
+  "break": {
+    "kind": "circuit",
+    "circuit": "m1-measure",
+    "intro": "The lamp **H1 does not light** when S1 is turned on. Find out why by measuring. Switch off F1 before any resistance test. Then choose the cause.",
+    "faults": [
+      { "id": "m1a-lamp", "kind": "load-open", "part": "H1", "report": "Lamp H1 has failed (open filament)." },
+      { "id": "m1a-w6", "kind": "wire-open", "wire": "w6", "report": "The wire from S1 terminal 14 to H1 X1 is broken." },
+      { "id": "m1a-w7", "kind": "wire-open", "wire": "w7", "report": "The wire from H1 X2 back to G1 0 V is broken." },
+      { "id": "m1a-s1", "kind": "contact-open", "part": "S1", "a": "13", "b": "14", "report": "Switch S1 does not close its contact." },
+      { "id": "m1a-mcb", "kind": "contact-open", "part": "F1", "a": "3", "b": "4", "report": "MCB F1 neutral pole is open, so G1 gets no supply." }
+    ],
+    "symptomChecks": [
+      { "do": { "kind": "switch", "part": "S1", "on": true } },
+      { "wait": 100 },
+      { "expect": { "part": "H1", "lit": true }, "fail": "H1 does not light with S1 on." }
+    ],
+    "parMeasurements": 5,
+    "parSeconds": 240,
+    "extraReports": ["Nothing is wrong with the circuit."]
+  },
+  "prove": {
+    "passMark": 0.8,
+    "questions": [
+      {
+        "id": "q1", "critical": true,
+        "text": "Which meter setting must never be used on a live circuit?",
+        "options": ["Resistance (Ω) or continuity", "AC volts (V~)", "DC volts (V=)", "None, all settings are safe on any circuit"],
+        "answer": 0,
+        "explain": "Resistance and continuity ranges inject a small voltage and expect a dead circuit. On a live circuit they can destroy the meter and cause an arc flash."
+      },
+      {
+        "id": "q2",
+        "text": "A 24 V DC coil has a resistance of 120 Ω. What current does it draw?",
+        "options": ["0.2 A", "5 A", "2880 A", "0.02 A"],
+        "answer": 0,
+        "explain": "I = V ÷ R = 24 ÷ 120 = 0.2 A."
+      },
+      {
+        "id": "q3",
+        "text": "The same coil draws 0.2 A at 24 V. What power does it use?",
+        "options": ["4.8 W", "120 W", "0.008 W", "24 W"],
+        "answer": 0,
+        "explain": "P = V × I = 24 × 0.2 = 4.8 W."
+      },
+      {
+        "id": "q4",
+        "text": "On a UK 230/400 V supply, what should you read between L1 and neutral?",
+        "options": ["About 230 V", "About 400 V", "About 110 V", "0 V"],
+        "answer": 0,
+        "explain": "Line to neutral is about 230 V. Line to line is about 400 V."
+      },
+      {
+        "id": "q5",
+        "text": "Why is the line-to-line voltage about 400 V when each phase is 230 V?",
+        "options": ["The phases are 120° apart, so line voltage = √3 × 230 ≈ 400 V", "Two phases add up: 230 + 230 = 460, minus losses", "The transformer doubles it", "Because of the neutral"],
+        "answer": 0,
+        "explain": "The phases peak at different times, so the difference between two of them is √3 times the phase voltage."
+      },
+      {
+        "id": "q6",
+        "text": "Two 100 Ω resistors are connected in parallel. What is the total resistance?",
+        "options": ["50 Ω", "200 Ω", "100 Ω", "0 Ω"],
+        "answer": 0,
+        "explain": "Equal resistors in parallel: one value divided by how many there are. 100 ÷ 2 = 50 Ω."
+      },
+      {
+        "id": "q7",
+        "text": "S1 is OFF and lamp H1 is healthy. What do you read across the open switch S1 in a 24 V circuit?",
+        "options": ["24 V", "0 V", "12 V", "It cannot be measured"],
+        "answer": 0,
+        "explain": "No current flows, so the lamp drops no voltage and the whole 24 V appears across the open switch."
+      },
+      {
+        "id": "q8", "critical": true,
+        "text": "You need to measure voltages in a 400 V distribution board. What must your meter and leads have?",
+        "options": ["A CAT III (or CAT IV at the supply origin) rating for at least 400 V, with GS38-style probes", "Any meter that reads up to 1000 V", "A CAT I rating for electronics", "Long bare probe tips to reach into terminals"],
+        "answer": 0,
+        "explain": "The CAT rating shows the meter can survive voltage surges at that point in the installation. GS38 probes limit exposed metal."
+      },
+      {
+        "id": "q9",
+        "text": "How do you measure the current a motor draws without disconnecting anything?",
+        "options": ["Clamp meter around one conductor", "Clamp meter around the whole cable", "Multimeter on the amps range across two phases", "Multimeter on Ω"],
+        "answer": 0,
+        "explain": "Around one conductor the clamp sees that current. Around the whole cable the currents cancel and it reads about zero."
+      },
+      {
+        "id": "q10",
+        "text": "In a healthy system, what do you expect between neutral and earth?",
+        "options": ["Close to 0 V", "About 230 V", "About 400 V", "Exactly 24 V"],
+        "answer": 0,
+        "explain": "Neutral is earthed at the supply, so N–PE is near zero. A high reading suggests a fault such as a broken neutral."
+      },
+      {
+        "id": "q11",
+        "text": "Your true-RMS meter reads 0 V across a 24 V DC supply. What is the most likely mistake?",
+        "options": ["The meter is set to V~ (AC) instead of V= (DC)", "The supply is perfect", "The probes are reversed", "The meter needs a bigger battery"],
+        "answer": 0,
+        "explain": "On the AC setting a true-RMS meter ignores DC and shows about 0 V. Reversed probes on DC show −24 V, not 0."
+      }
+    ]
+  },
+  "apply": {
+    "intro": "Do this on the training bench while your trainer watches. Your trainer signs it off. An app score alone never makes anyone competent or authorised.",
+    "items": [
+      { "id": "a1", "text": "Selects a meter and leads with a suitable CAT rating and GS38 probes, and checks them on a known source." },
+      { "id": "a2", "text": "Under supervision, measures L–L, L–N, L–PE and N–PE on a supply, and explains each reading." },
+      { "id": "a3", "text": "Measures a 24 V DC control supply on the correct meter setting." },
+      { "id": "a4", "text": "Measures resistance and continuity only on an isolated, proved-dead circuit." },
+      { "id": "a5", "text": "Measures a load current with a clamp meter around a single conductor." },
+      { "id": "a6", "text": "Records readings and compares them with the expected values." }
+    ]
+  }
+}

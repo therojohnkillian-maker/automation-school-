@@ -1,0 +1,206 @@
+{
+  "id": "m1-l2",
+  "moduleId": "m1",
+  "version": "1.0.0",
+  "title": "Drawings, symbols and terminal plans",
+  "minutes": 50,
+  "summary": "Read IEC symbols, device codes and contact numbers, follow a circuit from the schematic through the terminal plan to the field, and find wiring faults with the meter.",
+  "requires": ["m0-l1"],
+  "why": {
+    "text": "A pump at the fictional Riverside bottling plant has a new selector switch and \"running\" lamp out on site, 40 m from the panel. The cable has been pulled in. Your job is to terminate it on terminal strip **X1** so that it matches the drawings.\n\nOn site, the drawings are how a team agrees what is connected where. Technicians who read them quickly wire right first time, and find faults in minutes instead of hours."
+  },
+  "learn": {
+    "cards": [
+      {
+        "title": "Types of drawing",
+        "text": "- **Schematic (circuit diagram)**: how the circuit works. Devices are drawn where they make the current path easy to follow, not where they are mounted.\n- **Panel layout**: where each device sits on the backplate.\n- **Terminal plan (terminal diagram)**: every terminal on a strip, with what is connected on the panel side and on the field side, and which cable core.\n- **Cable schedule**: each cable, its type, cores, from and to.\n\nThe drawings in this course follow IEC conventions. Your site's own drawings define the rules for your work."
+      },
+      {
+        "title": "Common symbols",
+        "text": "Learn to recognise these at a glance. In a schematic, every contact is drawn in its **normal (rest) state**: no power, nothing pressed.\n\n- **NO** contact: open at rest. **NC** contact: closed at rest (the small bar).\n- **Coil**: a rectangle, terminals A1 and A2.\n- **Lamp**: a circle with a cross.\n- **Terminal strip**: numbered terminals in a row.",
+        "circuit": "m1-symbols"
+      },
+      {
+        "title": "Device codes",
+        "text": "Each device has a letter code and a number: **S1**, **K1**, **X1**. Common codes in this course:\n- **Q** power switching and protection (isolators, breakers), **F** protection (fuses, MCBs, overloads)\n- **K** relays and contactors (older drawings use **KM** for contactors)\n- **S** manual switches and push buttons, **B** sensors\n- **H** lamps (newer IEC 81346-2 drawings may use **P**)\n- **G** power supplies, **M** motors, **X** terminals, **W** cables\n\nDrawings from different years and companies use different letters. Check the legend on the drawing."
+      },
+      {
+        "title": "Contact numbers",
+        "text": "Contact terminals are numbered so you can tell what they are without a drawing:\n- **x3–x4**: auxiliary NO contact (13-14, 23-24, 43-44)\n- **x1–x2**: auxiliary NC contact (11-12, 21-22)\n- **95–96**: overload trip contact, NC. **97–98**: overload trip contact, NO.\n- **A1–A2**: coil\n- **1-2, 3-4, 5-6**: main power poles\n\nThe first digit is the position number, the second digit tells you the function."
+      },
+      {
+        "title": "Cross-references",
+        "text": "A contactor's coil and its contacts are often drawn on different pages. A **cross-reference** under the coil tells you where its contacts are, and a reference beside each contact points back to the coil. Many drawings write it as page and column, for example **/3.4** (page 3, column 4).\n\nFollow the references to see everything a relay switches. The exact format varies between drawing systems: check the drawing's legend."
+      },
+      {
+        "title": "Terminal plans",
+        "text": "Terminal strip **X1** is where panel wiring meets the field cable. For this lesson's pump:\n\n- **X1:1**: panel G1 +24 V. Field S1 terminal 13 (core 1)\n- **X1:2**: panel K1 A1. Field S1 terminal 14 (core 2)\n- **X1:3**: panel K1 14. Field H1 X1 (core 3)\n- **X1:4**: panel G1 0 V. Field H1 X2 (core 4)\n- **X1:5, X1:6**: spare\n\nOne side of the strip faces the panel, the other faces the field. Never move a field core to a different terminal without updating the drawing.",
+        "circuit": "m1-terminals"
+      },
+      {
+        "title": "When the drawing and the wiring disagree",
+        "text": "Sooner or later you will find wiring that does not match the drawing. **Do not assume** either one is right.\n\n1. Stop and make the area safe.\n2. Check which is correct, with the person responsible for the drawings.\n3. Mark up the drawing (\"red-line\" it) so the change is recorded.\n\nWrong drawings lead to wrong isolations. Keep them right."
+      }
+    ]
+  },
+  "show": {
+    "kind": "circuit",
+    "circuit": "m1-terminals",
+    "intro": "This pump circuit is wired to the terminal plan. Operate it and follow the current from the panel, through X1, to the field and back.",
+    "tasks": [
+      { "id": "t1", "text": "Turn the field selector S1 ON. Relay K1 pulls in and the field lamp H1 lights.", "when": [{ "part": "K1", "energised": true }, { "part": "H1", "lit": true }] },
+      { "id": "t2", "text": "Measure at the terminal strip: X1:2 to X1:4 on V=. This is the voltage arriving at the coil.", "measure": { "a": "X1:2", "b": "X1:4", "mode": "VDC" } },
+      { "id": "t3", "text": "Turn S1 OFF. K1 drops out and H1 goes out.", "when": [{ "part": "K1", "energised": false }] },
+      { "id": "t4", "text": "Measure X1:1 to X1:2 on V=. With S1 open, the full 24 V appears across the switch, and here at X1 too.", "measure": { "a": "X1:1", "b": "X1:2", "mode": "VDC" } }
+    ]
+  },
+  "build": {
+    "kind": "circuit",
+    "circuit": "m1-terminals",
+    "guided": {
+      "intro": "The panel side is wired. Terminate the **field cable** on X1 using this terminal plan:\n\n- X1:1 → S1 terminal 13\n- X1:2 → S1 terminal 14\n- X1:3 → H1 X1\n- X1:4 → H1 X2\n\nTap a terminal, then another, to add a wire.",
+      "removeWires": ["f1", "f2", "f3", "f4"],
+      "hints": [
+        "X1:1 carries +24 V from the panel. It goes to one side of the selector: S1 terminal 13.",
+        "The other side of the selector, S1 terminal 14, returns on X1:2 to the relay coil K1 A1.",
+        "The lamp is fed from K1's NO contact via X1:3: wire X1:3 to H1 X1.",
+        "The lamp's return goes to 0 V on X1:4: wire H1 X2 to X1:4."
+      ]
+    },
+    "unguided": {
+      "intro": "Now wire **both sides** of X1 from the terminal plan, with no hints. Panel side: X1:1 G1 +, X1:2 K1 A1, X1:3 K1 14, X1:4 G1 −. Field side as before. Also wire the coil return K1 A2 to G1 −.",
+      "removeWires": ["p1", "p2", "p4", "p5", "p6", "f1", "f2", "f3", "f4"]
+    },
+    "checks": [
+      { "do": { "kind": "switch", "part": "F1", "on": true } },
+      { "do": { "kind": "switch", "part": "S1", "on": false } },
+      { "wait": 100 },
+      { "expect": { "noShorts": true }, "fail": "There is a short circuit: the 24 V supply switched off. Look for a wire joining + and − directly." },
+      { "expect": { "part": "G1", "psuOn": true }, "fail": "The 24 V supply G1 is off." },
+      { "expect": { "connected": ["X1:1", "G1:P"] }, "fail": "X1:1 is not connected to G1 + on the panel side, as the terminal plan says." },
+      { "expect": { "connected": ["X1:2", "K1:A1"] }, "fail": "X1:2 is not connected to K1 A1 on the panel side." },
+      { "expect": { "connected": ["X1:3", "K1:14"] }, "fail": "X1:3 is not connected to K1 terminal 14 on the panel side." },
+      { "expect": { "connected": ["X1:4", "G1:M"] }, "fail": "X1:4 is not connected to G1 − (0 V) on the panel side." },
+      { "expect": { "connected": ["X1:1", "S1:13"] }, "fail": "The field core for S1 terminal 13 is not on X1:1, as the terminal plan says." },
+      { "expect": { "connected": ["X1:2", "S1:14"] }, "fail": "The field core for S1 terminal 14 is not on X1:2." },
+      { "expect": { "connected": ["X1:3", "H1:X1"] }, "fail": "The field core for H1 X1 is not on X1:3." },
+      { "expect": { "connected": ["X1:4", "H1:X2"] }, "fail": "The field core for H1 X2 is not on X1:4." },
+      { "expect": { "part": "K1", "energised": false }, "fail": "K1 pulls in while S1 is off." },
+      { "expect": { "part": "H1", "lit": false }, "fail": "H1 is lit while S1 is off." },
+      { "do": { "kind": "switch", "part": "S1", "on": true } },
+      { "wait": 100 },
+      { "expect": { "part": "K1", "energised": true }, "fail": "Turning S1 on does not pull in K1. Check the coil circuit: X1:1 → S1 → X1:2 → K1 A1, and K1 A2 → G1 −." },
+      { "expect": { "part": "H1", "lit": true }, "fail": "K1 pulls in but H1 does not light. Check K1 13-14 → X1:3 → H1 → X1:4 → G1 −." },
+      { "do": { "kind": "switch", "part": "S1", "on": false } },
+      { "wait": 100 },
+      { "expect": { "part": "K1", "energised": false }, "fail": "K1 stays in when S1 is turned off." }
+    ]
+  },
+  "break": {
+    "kind": "circuit",
+    "circuit": "m1-terminals",
+    "intro": "The operator reports a problem with the pump lamp or relay. **Operate S1 to see the symptom**, then use the terminal plan and the meter to find the cause. Switch off F1 before any resistance test.",
+    "faults": [
+      { "id": "m1b-spare", "kind": "wire-moved", "wire": "f3", "end": "a", "to": "X1:5", "report": "The field core for H1 X1 is landed on spare terminal X1:5 instead of X1:3." },
+      { "id": "m1b-loose", "kind": "wire-open", "wire": "p2", "report": "The panel-side wire from X1:2 to K1 A1 is loose in its terminal." },
+      { "id": "m1b-always", "kind": "wire-moved", "wire": "p4", "end": "a", "to": "K1:13", "report": "The lamp feed is on K1 terminal 13 instead of 14, so H1 is lit all the time." },
+      { "id": "m1b-coil", "kind": "coil-open", "part": "K1", "report": "Relay K1 coil is open circuit." }
+    ],
+    "parMeasurements": 5,
+    "parSeconds": 300,
+    "extraReports": ["Nothing is wrong with the wiring."]
+  },
+  "prove": {
+    "passMark": 0.8,
+    "questions": [
+      {
+        "id": "q1",
+        "text": "An auxiliary contact is numbered 13-14. What is it?",
+        "options": ["A normally open (NO) contact", "A normally closed (NC) contact", "A coil", "An overload trip contact"],
+        "answer": 0,
+        "explain": "A second digit of 3-4 means NO. A second digit of 1-2 means NC."
+      },
+      {
+        "id": "q2",
+        "text": "Contact 21-22 on a contactor is:",
+        "options": ["Normally closed (NC)", "Normally open (NO)", "The coil", "A main power pole"],
+        "answer": 0,
+        "explain": "x1–x2 numbering is NC."
+      },
+      {
+        "id": "q3",
+        "text": "Which terminals belong to a contactor coil?",
+        "options": ["A1 and A2", "1 and 2", "95 and 96", "13 and 14"],
+        "answer": 0,
+        "explain": "Coils are always A1–A2. 1-2 is a main pole, 95-96 an overload contact, 13-14 an auxiliary NO."
+      },
+      {
+        "id": "q4",
+        "text": "In a schematic, contacts are drawn in which state?",
+        "options": ["Their normal (rest) state: no power, nothing operated", "The state when the machine is running", "Whatever state they were last in", "Always closed"],
+        "answer": 0,
+        "explain": "Drawing every contact at rest lets anyone read the circuit the same way."
+      },
+      {
+        "id": "q5",
+        "text": "What does a terminal plan show?",
+        "options": ["Each terminal, what connects to it on the panel side and field side, and the cable core", "Where each device is mounted on the backplate", "How the circuit works, current path by current path", "The PLC program"],
+        "answer": 0,
+        "explain": "A layout shows positions and a schematic shows function. The terminal plan shows connections at the strip."
+      },
+      {
+        "id": "q6",
+        "text": "Under a relay coil on a schematic you see \"/3.4\". In many drawing systems this means:",
+        "options": ["Its contacts are drawn on page 3, column 4", "The coil is 3.4 V", "It has 3 NO and 4 NC contacts", "It is the 34th relay"],
+        "answer": 0,
+        "explain": "It is a cross-reference to where the contacts are drawn. Check the drawing's legend for its exact format."
+      },
+      {
+        "id": "q7", "critical": true,
+        "text": "You find a field wire on a different terminal from the one the drawing shows. What do you do first?",
+        "options": ["Stop, make it safe, and check with the person responsible which one is correct before changing anything", "Move the wire to match the drawing straight away", "Change the drawing to match the wire", "Ignore it if the machine works"],
+        "answer": 0,
+        "explain": "Either one could be wrong. Changing wiring or drawings on a guess can make an isolation or the machine unsafe."
+      },
+      {
+        "id": "q8", "critical": true,
+        "text": "Before you re-terminate a field core on a terminal strip, you must:",
+        "options": ["Isolate the circuit and prove it dead, including any supply from the field side", "Switch the selector off", "Press the STOP button", "Nothing, 24 V is safe"],
+        "answer": 0,
+        "explain": "Field cables can carry voltages from other sources. Low voltage control circuits can also share terminals with mains. Isolate and prove dead."
+      },
+      {
+        "id": "q9",
+        "text": "In common IEC device codes, which letter is used for a terminal strip?",
+        "options": ["X", "T", "K", "S"],
+        "answer": 0,
+        "explain": "X is the connecting letter: terminals, plugs and sockets."
+      },
+      {
+        "id": "q10",
+        "text": "Older drawings mark a lamp H1. A newer IEC 81346-2 drawing may mark the same lamp as:",
+        "options": ["P1", "K1", "M1", "Q1"],
+        "answer": 0,
+        "explain": "IEC 81346-2 uses P for devices that present information, such as lamps. Always check the drawing's legend."
+      },
+      {
+        "id": "q11",
+        "text": "With S1 OFF you measure 24 V between X1:1 and X1:2. What does this tell you?",
+        "options": ["Supply is reaching X1:1 and the coil circuit is complete back to 0 V; the open selector is between them", "The selector is broken", "There is a short circuit", "The coil is open circuit"],
+        "answer": 0,
+        "explain": "The full voltage across an open switch shows both sides of it are connected: supply on one side, the load back to 0 V on the other."
+      }
+    ]
+  },
+  "apply": {
+    "intro": "Do this on the training bench while your trainer watches. Your trainer signs it off. An app score alone never makes anyone competent or authorised.",
+    "items": [
+      { "id": "a1", "text": "Identifies devices on a real drawing by their codes, and reads contact numbers correctly." },
+      { "id": "a2", "text": "Follows a circuit from the schematic, through the terminal plan, to the field device." },
+      { "id": "a3", "text": "Terminates a multi-core field cable on a terminal strip to the terminal plan: correct cores, ferrules, tight terminations, labels." },
+      { "id": "a4", "text": "Confirms terminations with a continuity test on an isolated, proved-dead circuit." },
+      { "id": "a5", "text": "Red-lines a drawing correctly for a change, and explains why drawings must match the installation." },
+      { "id": "a6", "text": "Explains how to follow cross-references between coil and contacts." }
+    ]
+  }
+}

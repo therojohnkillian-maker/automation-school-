@@ -20,6 +20,7 @@ import {
 } from '../../data/progress';
 import { WhyStep, LearnStep, ShowIsolationStep, BuildIsolationStep, BreakIsolationStep, ProveStep, ApplyStep } from './Steps';
 import { ShowCircuitStep, BuildCircuitStep, BreakCircuitStep } from './CircuitSteps';
+import { BuildMeasureStep } from './MeasureStep';
 import type { StepProps } from './stepTypes';
 import { FeedbackButton } from '../pilot/Feedback';
 
@@ -101,7 +102,7 @@ export function LessonPage() {
     why: <WhyStep {...props} />,
     learn: <LearnStep {...props} />,
     show: kindShow === 'circuit' ? <ShowCircuitStep {...props} /> : <ShowIsolationStep {...props} />,
-    build: lesson.build.kind === 'circuit' ? <BuildCircuitStep {...props} /> : <BuildIsolationStep {...props} />,
+    build: lesson.build.kind === 'circuit' ? <BuildCircuitStep {...props} /> : lesson.build.kind === 'measure' ? <BuildMeasureStep {...props} /> : <BuildIsolationStep {...props} />,
     break: lesson.break.kind === 'circuit' ? <BreakCircuitStep {...props} /> : <BreakIsolationStep {...props} />,
     prove: <ProveStep {...props} />,
     apply: <ApplyStep {...props} />,

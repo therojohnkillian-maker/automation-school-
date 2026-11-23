@@ -14,6 +14,10 @@ Learners and trainers should know where the simulators differ from real equipmen
 - Coils: 120 Ω, pull in at 20 V DC, drop out below 10 V DC. Lamps: 576 Ω.
 - 0 V is treated as its own reference. It is not shown bonded to earth.
 
+- Terminal strips: each terminal number is one connection point; panel and field wires land on the same point.
+- Resistors are ideal. Switches (S1 in M1) stay where they are put; push buttons spring back.
+- No ammeter in the simulator yet: current is taught with a clamp meter in Learn and checked in the Prove test.
+
 ## Motor and overload
 - States: stopped, starting, running, stalled, two phases only, coasting.
 - Synchronous speed = 120 × f / poles. Running speed is the nameplate rated speed.
