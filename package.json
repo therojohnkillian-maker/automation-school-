@@ -1,6 +1,6 @@
 {
   "name": "automation-school",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Offline-first automation training app",
   "scripts": {
     "dev": "vite",

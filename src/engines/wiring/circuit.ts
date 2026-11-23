@@ -64,6 +64,12 @@ export const PART_TERMINALS: Record<PartType, string[]> = {
   resistor: ['1', '2'],
   sw_no: ['13', '14'],
   tstrip: [], // named 1..count, see terminalsOf
+  tx2w: ['+', '-'],
+  ai: ['+', '-'],
+  trip: ['+', '-', '13', '14', '23', '24'],
+  prox_pnp: ['BN', 'BU', 'BK'],
+  prox_npn: ['BN', 'BU', 'BK'],
+  di: ['I0', 'I1', 'M'],
 };
 
 /** The terminals a part has. Terminal strips are numbered 1..count. */
@@ -84,6 +90,30 @@ const ACCEL_MS = 1200;
 const OL_TAU_MS = 100_000; // VERIFY: simplified Class 10 thermal model
 const OL_TRIP = 1.44; // trips above about 1.2 × setting
 const OL_RESET_BELOW = 1.0;
+const AI_OHMS = 250; // analog input / trip amplifier input resistance
+const DI_OHMS = 3000; // digital input, about 8 mA at 24 V
+const PROX_OHMS = 2400; // sensor supply consumption, about 10 mA
+const DI_ON_V = 15; // IEC 61131-2 type 1 style: ON above 15 V (VERIFY)
+const PROX_MIN_V = 18;
+const NAMUR_LOW = 3.8; // VERIFY: NE 43 saturation limits
+const NAMUR_HIGH = 20.5;
+const TX_FAIL_MA = 3.6;
+export const RAW_SPAN = 27648;
+
+/** Signal status text for a loop current, using NAMUR NE 43 style limits (VERIFY). */
+export function signalStatus(mA: number): string {
+  if (mA < 3.6) return 'WIRE BREAK / FAULT (below 3.6 mA)';
+  if (mA < 3.8) return 'BELOW RANGE';
+  if (mA > 21) return 'FAULT / OVER RANGE (above 21 mA)';
+  if (mA > 20.5) return 'ABOVE RANGE';
+  return 'OK';
+}
+
+/** Siemens-style raw count: 4 mA = 0, 20 mA = 27648. Outside the module's limits it reports 32767 (VERIFY). */
+export function rawCount(mA: number): number {
+  const raw = Math.round(((mA - 4) / 16) * RAW_SPAN);
+  return raw > 32511 || raw < -4864 ? 32767 : raw;
+}
 
 interface Runtime {
   def: PartJson;
@@ -96,6 +126,10 @@ interface Runtime {
   burnt: boolean;
   thermal: number;
   motor: { state: MotorState; rpm: number; amps: number; direction: 'forward' | 'reverse' | null };
+  value: number;
+  loopA: number;
+  relays: { hi: boolean; lo: boolean };
+  config?: { rangeLo: number; rangeHi: number };
 }
 
 interface Analysis {
@@ -143,7 +177,16 @@ export class Circuit {
         burnt: false,
         thermal: 0,
         motor: { state: 'stopped', rpm: 0, amps: 0, direction: null },
+        value: p.init?.value ?? 0,
+        loopA: 0,
+        relays: { hi: false, lo: false },
       });
+    }
+    for (const f of faults) {
+      if (f.kind === 'config') {
+        const rt = this.parts.get(f.part);
+        if (rt) rt.config = { rangeLo: f.rangeLo, rangeHi: f.rangeHi };
+      }
     }
     this.solve(true);
   }
@@ -227,6 +270,23 @@ export class Circuit {
         p.locked = false;
         this.note(`${name} lock removed.`);
         break;
+      case 'set':
+        if (p.def.type === 'tx2w') {
+          const lo = p.def.params?.rangeLo ?? 0;
+          const hi = p.def.params?.rangeHi ?? 100;
+          p.value = Math.min(hi + (hi - lo) * 0.1, Math.max(lo - (hi - lo) * 0.1, cmd.value));
+          this.note(`${name} process value set to ${round2(p.value)} ${p.def.params?.unit ?? ''}.`);
+        } else if (p.def.type === 'prox_pnp' || p.def.type === 'prox_npn') {
+          p.value = cmd.value ? 1 : 0;
+          this.note(`${name}: target ${p.value ? 'in front of the sensor' : 'moved away'}.`);
+        }
+        break;
+      case 'config':
+        if (p.def.type === 'ai' || p.def.type === 'trip') {
+          p.config = { rangeLo: cmd.rangeLo, rangeHi: cmd.rangeHi };
+          this.note(`${name} scaling set: 4 mA = ${cmd.rangeLo}, 20 mA = ${cmd.rangeHi} ${p.def.params?.unit ?? ''}.`);
+        }
+        break;
       case 'trip-test':
         if (p.def.type === 'overload' || p.def.type === 'mpcb3') {
           if (!p.tripped) {
@@ -272,8 +332,9 @@ export class Circuit {
 
   private links(): [string, string][] {
     const out: [string, string][] = [];
-    const open = new Set(this.faults.filter((f) => f.kind === 'wire-open').map((f) => (f as { wire: string }).wire));
+    const open = new Set(this.faults.filter((f) => f.kind === 'wire-open' || f.kind === 'high-resistance').map((f) => (f as { wire: string }).wire));
     for (const w of this.wires) if (!open.has(w.id)) out.push([w.a, w.b]);
+    for (const f of this.faults) if (f.kind === 'extra-wire') out.push([f.a, f.b]); // a hidden short or stray link
     const stuckOpen = this.faultSet('contact-open');
     const stuckClosed = this.faultSet('contact-closed');
     for (const [id, p] of this.parts) {
@@ -298,6 +359,12 @@ export class Circuit {
       } else if (t === 'pb_no') add(p.pressed, ['13', '14']);
       else if (t === 'pb_nc') add(!p.pressed, ['11', '12']);
       else if (t === 'sw_no') add(p.on, ['13', '14']);
+      else if (t === 'prox_pnp') add(p.energised, ['BN', 'BK']);
+      else if (t === 'prox_npn') add(p.energised, ['BK', 'BU']);
+      else if (t === 'trip') {
+        add(p.relays.hi, ['13', '14']);
+        add(p.relays.lo, ['23', '24']);
+      }
       for (const [a, b] of all) {
         const k = `${id}:${a}-${b}`;
         const closed = (pairs.some(([x, y]) => x === a && y === b) && !stuckOpen.has(k)) || stuckClosed.has(k);
@@ -314,12 +381,30 @@ export class Circuit {
       if (p.def.type === 'contactor' && !p.burnt && !this.coilOpen(id)) out.push([key(id, 'A1'), key(id, 'A2'), COIL_OHMS]);
       if (p.def.type === 'lamp24' && !p.burnt && !this.coilOpen(id)) out.push([key(id, 'X1'), key(id, 'X2'), LAMP_OHMS]);
       if (p.def.type === 'resistor' && !this.coilOpen(id)) out.push([key(id, '1'), key(id, '2'), p.def.params?.ohms ?? 1000]);
+      if (p.def.type === 'ai' || p.def.type === 'trip') out.push([key(id, '+'), key(id, '-'), AI_OHMS]);
+      if (p.def.type === 'di') out.push([key(id, 'I0'), key(id, 'M'), DI_OHMS], [key(id, 'I1'), key(id, 'M'), DI_OHMS]);
+      if (p.def.type === 'prox_pnp' || p.def.type === 'prox_npn') out.push([key(id, 'BN'), key(id, 'BU'), PROX_OHMS]);
       if (p.def.type === 'motor3') {
         const r = p.def.params?.windingOhms ?? 6;
         out.push([key(id, 'U1'), key(id, 'V1'), r], [key(id, 'V1'), key(id, 'W1'), r], [key(id, 'W1'), key(id, 'U1'), r]);
       }
     }
+    for (const f of this.faults) {
+      if (f.kind === 'high-resistance') {
+        const w = this.wires.find((x) => x.id === f.wire);
+        if (w) out.push([w.a, w.b, f.ohms]); // a corroded or loose termination
+      }
+    }
     return out;
+  }
+
+  /** Set current of each loop-powered transmitter, in amps. */
+  private txSetpoint(p: Runtime): number {
+    if (this.faults.some((f) => f.kind === 'tx-failed' && f.part === p.def.id)) return TX_FAIL_MA / 1000;
+    const lo = p.def.params?.rangeLo ?? 0;
+    const hi = p.def.params?.rangeHi ?? 100;
+    const mA = 4 + (16 * (p.value - lo)) / (hi - lo);
+    return Math.min(NAMUR_HIGH, Math.max(NAMUR_LOW, mA)) / 1000;
   }
 
   private analyse(): Analysis {
@@ -352,6 +437,42 @@ export class Circuit {
 
   /** Potentials of every node. Nodes with no path to a source are floating (undefined). */
   private nodal(uf: UnionFind, nodeSrc: Map<string, Source[]>): Map<string, Pot | undefined> {
+    // Loop-powered transmitters are current sources that need a minimum voltage (compliance).
+    const txs = [...this.parts.values()].filter((p) => p.def.type === 'tx2w');
+    if (!txs.length) return this.nodalWith(uf, nodeSrc, []) ?? this.nodalWith(uf, nodeSrc, [], true)!;
+    const term = (p: Runtime, t: string) => uf.find(key(p.def.id, t));
+    const vtx = (pots: Map<string, Pot | undefined> | null, p: Runtime) => {
+      const a = pots?.get(term(p, '+'));
+      const b = pots?.get(term(p, '-'));
+      return a && b ? a.dc - b.dc : undefined;
+    };
+    const zero = this.nodalWith(uf, nodeSrc, [])!;
+    const amps = txs.map((p) => {
+      const v0 = vtx(zero, p);
+      return v0 !== undefined && v0 >= (p.def.params?.minVolts ?? 10) ? this.txSetpoint(p) : 0;
+    });
+    const src = () => txs.map((p, i) => [term(p, '+'), term(p, '-'), amps[i]] as [string, string, number]);
+    let full = this.nodalWith(uf, nodeSrc, src());
+    if (!full) {
+      amps.fill(0);
+      full = zero;
+    }
+    txs.forEach((p, i) => {
+      const min = p.def.params?.minVolts ?? 10;
+      const v0 = vtx(zero, p);
+      const v1 = vtx(full, p);
+      if (amps[i] > 0 && v0 !== undefined && v1 !== undefined && v1 < min) {
+        const k = (v1 - v0) / amps[i];
+        amps[i] = k < 0 ? Math.max(0, Math.min(amps[i], (min - v0) / k)) : 0;
+      }
+    });
+    const final = this.nodalWith(uf, nodeSrc, src()) ?? zero;
+    txs.forEach((p, i) => (p.loopA = amps[i]));
+    return final;
+  }
+
+  /** Nodal analysis with optional current sources [from node, to node, amps]. Returns null if the network cannot be solved. */
+  private nodalWith(uf: UnionFind, nodeSrc: Map<string, Source[]>, currents: [string, string, number][], force = false): Map<string, Pot | undefined> | null {
     const pots = new Map<string, Pot | undefined>();
     const roots = new Set<string>();
     for (const [id, p] of this.parts) for (const t of terminalsOf(p.def)) roots.add(uf.find(key(id, t)));
@@ -368,6 +489,7 @@ export class Circuit {
       adj.set(b, [...(adj.get(b) ?? []), a]);
     }
     const reach = new Set<string>();
+    void force;
     const stack = [...roots].filter((r) => nodeSrc.has(r));
     const seen = new Set(stack);
     while (stack.length) {
@@ -405,8 +527,16 @@ export class Circuit {
         }
       }
     }
+    for (const [from, to, amps] of currents) {
+      if (!amps) continue;
+      const i = idx.get(from);
+      const j = idx.get(to);
+      if (i !== undefined) B[i][2] -= amps;
+      if (j !== undefined) B[j][2] += amps;
+    }
     const x = solveLinear(A, B);
-    if (x) solveFor.forEach((r, i) => pots.set(r, { re: x[i][0], im: x[i][1], dc: x[i][2] }));
+    if (!x) return currents.some(([, , a]) => a) ? null : pots;
+    solveFor.forEach((r, i) => pots.set(r, { re: x[i][0], im: x[i][1], dc: x[i][2] }));
     return pots;
   }
 
@@ -469,6 +599,31 @@ export class Circuit {
           this.note(`${id} burnt out: ${Math.round(vv.ac)} V AC on a 24 V DC ${p.def.type === 'lamp24' ? 'lamp' : 'coil'}.`);
           this.safety.push({ t: this.t, critical: false, text: `${id} was connected to the wrong voltage and damaged.` });
           changed = true;
+        }
+      }
+      if (changed) continue;
+      for (const [id, p] of this.parts) {
+        if (p.def.type === 'prox_pnp' || p.def.type === 'prox_npn') {
+          const powered = v(key(id, 'BN'), key(id, 'BU')).dc >= PROX_MIN_V;
+          const want = powered && p.value > 0;
+          if (want !== p.energised) {
+            p.energised = want;
+            if (!quiet) this.note(`${id} output ${want ? 'switched on (LED lit)' : 'off'}.`);
+            changed = true;
+          }
+        }
+        if (p.def.type === 'trip') {
+          const val = this.engValue(id, v(key(id, '+'), key(id, '-')).dc / AI_OHMS * 1000);
+          const prm = p.def.params ?? {};
+          const hy = prm.hyst ?? 0;
+          const hi = p.relays.hi ? val >= (prm.setHi ?? Infinity) - hy : val >= (prm.setHi ?? Infinity);
+          const lo = p.relays.lo ? val <= (prm.setLo ?? -Infinity) + hy : val <= (prm.setLo ?? -Infinity);
+          if (hi !== p.relays.hi || lo !== p.relays.lo) {
+            if (!quiet && hi !== p.relays.hi) this.note(`${id} HIGH alarm relay ${hi ? 'energised' : 'reset'}.`);
+            if (!quiet && lo !== p.relays.lo) this.note(`${id} LOW alarm relay ${lo ? 'energised' : 'reset'}.`);
+            p.relays = { hi, lo };
+            changed = true;
+          }
         }
       }
       if (changed) continue;
@@ -678,6 +833,14 @@ export class Circuit {
     return null;
   }
 
+  /** Engineering value for an analog input or trip amplifier at a given current. */
+  engValue(id: string, mA: number): number {
+    const p = this.parts.get(id)!;
+    const lo = p.config?.rangeLo ?? p.def.params?.rangeLo ?? 0;
+    const hi = p.config?.rangeHi ?? p.def.params?.rangeHi ?? 100;
+    return lo + ((mA - 4) / 16) * (hi - lo);
+  }
+
   status(id: string): PartStatus {
     const p = this.parts.get(id)!;
     const s: PartStatus = { id, type: p.def.type, label: p.def.label };
@@ -716,6 +879,34 @@ export class Circuit {
         s.burnt = p.burnt;
         break;
       }
+      case 'tx2w':
+        s.value = round2(p.value);
+        s.unit = p.def.params?.unit;
+        s.rangeLo = p.def.params?.rangeLo;
+        s.rangeHi = p.def.params?.rangeHi;
+        s.mA = round2(p.loopA * 1000);
+        break;
+      case 'ai':
+      case 'trip': {
+        const mA = (this.voltage(key(id, '+'), key(id, '-')).dc / AI_OHMS) * 1000;
+        s.mA = round2(mA);
+        s.raw = rawCount(mA);
+        s.eng = round2(this.engValue(id, mA));
+        s.unit = p.def.params?.unit;
+        s.rangeLo = p.config?.rangeLo ?? p.def.params?.rangeLo;
+        s.rangeHi = p.config?.rangeHi ?? p.def.params?.rangeHi;
+        s.signal = signalStatus(mA);
+        if (p.def.type === 'trip') s.relays = { ...p.relays };
+        break;
+      }
+      case 'prox_pnp':
+      case 'prox_npn':
+        s.value = p.value;
+        s.output = p.energised;
+        break;
+      case 'di':
+        s.inputs = Object.fromEntries(['I0', 'I1'].map((t) => [t, Math.abs(this.voltage(key(id, t), key(id, 'M')).dc) >= DI_ON_V]));
+        break;
       case 'motor3':
         s.motor = { ...p.motor, rpm: Math.round(p.motor.rpm), amps: Math.round(p.motor.amps * 10) / 10 };
         break;
@@ -737,6 +928,8 @@ export class Circuit {
     return new Circuit(this.def, this.faults.filter((f) => f.kind !== 'wire-moved'), this.wires);
   }
 }
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
 
 export function voltageBetween(pa: Pot | undefined, pb: Pot | undefined): { ac: number; dc: number; floating: boolean } {
   if (!pa || !pb) return { ac: 0, dc: 0, floating: true };

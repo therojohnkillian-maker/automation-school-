@@ -10,6 +10,8 @@ const command = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('reset'), part: z.string() }),
   z.object({ kind: z.literal('lock'), part: z.string() }),
   z.object({ kind: z.literal('unlock'), part: z.string() }),
+  z.object({ kind: z.literal('set'), part: z.string(), value: z.number() }),
+  z.object({ kind: z.literal('config'), part: z.string(), rangeLo: z.number(), rangeHi: z.number() }),
 ]);
 
 const expectation = z.union([
@@ -21,6 +23,11 @@ const expectation = z.union([
   z.object({ part: z.string(), motor: z.enum(['running', 'stopped-or-coasting', 'not-powered']), direction: z.enum(['forward', 'reverse']).optional() }).strict(),
   z.object({ part: z.string(), feedsMotor: z.string() }).strict(),
   z.object({ connected: z.tuple([z.string(), z.string()]) }).strict(),
+  z.object({ part: z.string(), input: z.string(), on: z.boolean() }).strict(),
+  z.object({ part: z.string(), output: z.boolean() }).strict(),
+  z.object({ part: z.string(), mA: z.tuple([z.number(), z.number()]) }).strict(),
+  z.object({ part: z.string(), value: z.tuple([z.number(), z.number()]) }).strict(),
+  z.object({ part: z.string(), relay: z.enum(['hi', 'lo']), on: z.boolean() }).strict(),
   z.object({ noShorts: z.literal(true) }).strict(),
   z.object({ stable: z.literal(true) }).strict(),
 ]);
@@ -38,6 +45,10 @@ const fault = z.discriminatedUnion('kind', [
   z.object({ id: z.string(), kind: z.literal('contact-closed'), part: z.string(), a: z.string(), b: z.string(), report: z.string() }),
   z.object({ id: z.string(), kind: z.literal('coil-open'), part: z.string(), report: z.string() }),
   z.object({ id: z.string(), kind: z.literal('load-open'), part: z.string(), report: z.string() }),
+  z.object({ id: z.string(), kind: z.literal('high-resistance'), wire: z.string(), ohms: z.number().positive(), report: z.string() }),
+  z.object({ id: z.string(), kind: z.literal('extra-wire'), a: z.string(), b: z.string(), report: z.string() }),
+  z.object({ id: z.string(), kind: z.literal('tx-failed'), part: z.string(), report: z.string() }),
+  z.object({ id: z.string(), kind: z.literal('config'), part: z.string(), rangeLo: z.number(), rangeHi: z.number(), report: z.string() }),
   z.object({ id: z.string(), kind: z.literal('labels-swapped'), parts: z.tuple([z.string(), z.string()]), report: z.string() }),
   z.object({ id: z.string(), kind: z.literal('tester-faulty'), report: z.string() }),
 ]);
@@ -114,8 +125,10 @@ export const lessonSchema = z.object({
       kind: z.literal('circuit'),
       circuit: z.string(),
       checks: z.array(checkStep).min(1),
-      guided: z.object({ intro: z.string(), removeWires: z.array(z.string()).min(1), hints: z.array(z.string()).min(1) }),
-      unguided: z.object({ intro: z.string(), removeWires: z.array(z.string()).min(1) }),
+      guided: z.object({ intro: z.string(), removeWires: z.array(z.string()).min(1), hints: z.array(z.string()).min(1), configure: z.array(z.string()).default([]) }),
+      unguided: z.object({ intro: z.string(), removeWires: z.array(z.string()).min(1), configure: z.array(z.string()).default([]) }),
+      /** Settings the learner starts from in the unguided part (e.g. an analog input left unscaled). */
+      unguidedStart: z.array(command).default([]),
     }),
     z.object({ kind: z.literal('isolation'), scenario, guided: z.object({ intro: z.string() }), unguided: z.object({ intro: z.string() }) }),
     z.object({
@@ -149,3 +162,39 @@ export const STEPS: { id: StepId; label: string; short: string }[] = [
 ];
 
 export const glossarySchema = z.record(z.string(), z.string());
+
+// ---------------- Templates ----------------
+
+export const templateSchema = z.object({
+  id: z.string(),
+  number: z.number().int().min(1).max(8),
+  moduleId: z.string(),
+  version: z.string(),
+  title: z.string(),
+  summary: z.string(),
+  circuit: z.string(),
+  brief: z.string(),
+  ioList: z.array(z.object({ tag: z.string(), description: z.string(), type: z.string(), range: z.string(), connection: z.string() })).min(1),
+  logic: z.array(z.object({ function: z.string(), condition: z.string(), action: z.string() })).min(1),
+  logicNote: z.string().optional(),
+  schedule: z.array(z.object({ step: z.string(), who: z.string(), hours: z.number().positive() })).min(1),
+  testSheet: z
+    .array(
+      z.object({
+        id: z.string(),
+        text: z.string(),
+        setup: z.array(command).default([]),
+        part: z.string(),
+        field: z.enum(['mA', 'eng', 'lit', 'energised']),
+        unit: z.string(),
+      }),
+    )
+    .min(3),
+  faults: z.array(fault).min(3),
+  faultChecks: z.array(checkStep).min(1),
+  extraReports: z.array(z.string()).default([]),
+  modelAnswer: z.string(),
+});
+
+export type Template = z.infer<typeof templateSchema>;
+export type TestRow = Template['testSheet'][number];

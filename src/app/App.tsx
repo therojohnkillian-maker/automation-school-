@@ -12,6 +12,8 @@ import { Settings } from '../features/settings/Settings';
 import { LearnList } from '../features/learn/LearnList';
 import { LessonPage } from '../features/learn/LessonPage';
 import { Placement } from '../features/learn/Placement';
+import { TemplateList } from '../features/templates/TemplateList';
+import { TemplatePage } from '../features/templates/TemplatePage';
 import { Notice } from '../components/ui';
 
 export function App() {
@@ -57,6 +59,8 @@ export function App() {
           <Route path="/learn/:lessonId" element={<LessonPage />} />
           <Route path="/learn/:lessonId/:step" element={<LessonPage />} />
           <Route path="/placement/:moduleId" element={<Placement />} />
+          <Route path="/templates" element={<TemplateList />} />
+          <Route path="/templates/:templateId" element={<TemplatePage />} />
           {profile.role === 'trainer' && <Route path="/trainer" element={<Trainer />} />}
           <Route
             path="/settings"
@@ -88,6 +92,7 @@ function Shell({ profile, onSwitch, children }: { profile: Profile; onSwitch: ()
   const links = [
     { to: '/', label: 'Home', icon: '⌂' },
     { to: '/learn', label: 'Learn', icon: '▤' },
+    { to: '/templates', label: 'Templates', icon: '◫' },
     ...(profile.role === 'trainer' ? [{ to: '/trainer', label: 'Trainer', icon: '☑' }] : []),
     { to: '/settings', label: 'Settings', icon: '⚙' },
   ];

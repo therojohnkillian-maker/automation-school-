@@ -14,7 +14,13 @@ export type PartType =
   | 'motor3'
   | 'resistor'
   | 'sw_no'
-  | 'tstrip';
+  | 'tstrip'
+  | 'tx2w'
+  | 'ai'
+  | 'trip'
+  | 'prox_pnp'
+  | 'prox_npn'
+  | 'di';
 
 export interface PartJson {
   id: string;
@@ -41,8 +47,18 @@ export interface PartJson {
     ohms?: number;
     /** Number of terminals on a terminal strip (named 1..count). */
     count?: number;
+    /** Analog range in engineering units (transmitters, analog inputs, trip amplifiers). */
+    rangeLo?: number;
+    rangeHi?: number;
+    unit?: string;
+    /** Trip amplifier set points and hysteresis, in engineering units. */
+    setHi?: number;
+    setLo?: number;
+    hyst?: number;
+    /** Minimum voltage a loop-powered transmitter needs across its terminals. */
+    minVolts?: number;
   };
-  init?: { on?: boolean; tripped?: boolean };
+  init?: { on?: boolean; tripped?: boolean; value?: number };
 }
 
 export interface WireJson {
@@ -73,6 +89,10 @@ export type FaultJson =
   | { id: string; kind: 'contact-closed'; part: string; a: string; b: string; report: string }
   | { id: string; kind: 'coil-open'; part: string; report: string }
   | { id: string; kind: 'load-open'; part: string; report: string }
+  | { id: string; kind: 'high-resistance'; wire: string; ohms: number; report: string }
+  | { id: string; kind: 'extra-wire'; a: string; b: string; report: string }
+  | { id: string; kind: 'tx-failed'; part: string; report: string }
+  | { id: string; kind: 'config'; part: string; rangeLo: number; rangeHi: number; report: string }
   | { id: string; kind: 'labels-swapped'; parts: [string, string]; report: string }
   | { id: string; kind: 'tester-faulty'; report: string };
 
@@ -83,7 +103,9 @@ export type Command =
   | { kind: 'trip-test'; part: string }
   | { kind: 'reset'; part: string }
   | { kind: 'lock'; part: string }
-  | { kind: 'unlock'; part: string };
+  | { kind: 'unlock'; part: string }
+  | { kind: 'set'; part: string; value: number }
+  | { kind: 'config'; part: string; rangeLo: number; rangeHi: number };
 
 export type MotorState = 'stopped' | 'starting' | 'running' | 'stalled' | 'single-phasing' | 'coasting';
 
@@ -101,6 +123,22 @@ export interface PartStatus {
   burnt?: boolean;
   motor?: { state: MotorState; rpm: number; amps: number; direction: 'forward' | 'reverse' | null };
   thermalPct?: number;
+  /** Process value (transmitters) or target present 0/1 (proximity sensors). */
+  value?: number;
+  /** Analog signals. */
+  mA?: number;
+  raw?: number;
+  eng?: number;
+  unit?: string;
+  rangeLo?: number;
+  rangeHi?: number;
+  signal?: string;
+  /** Digital input states. */
+  inputs?: Record<string, boolean>;
+  /** Trip amplifier relays. */
+  relays?: { hi: boolean; lo: boolean };
+  /** Sensor output switched / LED on. */
+  output?: boolean;
 }
 
 export interface LogEntry {

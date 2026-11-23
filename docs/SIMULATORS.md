@@ -18,6 +18,14 @@ Learners and trainers should know where the simulators differ from real equipmen
 - Resistors are ideal. Switches (S1 in M1) stay where they are put; push buttons spring back.
 - No ammeter in the simulator yet: current is taught with a clamp meter in Learn and checked in the Prove test.
 
+## Instruments (M2)
+- 3-wire sensors switch only when their supply (BN–BU) is at least 18 V. PNP links BN to BK, NPN links BK to BU. Supply draw is modelled as 2.4 kΩ.
+- Digital inputs are 3 kΩ between the input and its common, ON above 15 V either polarity (bidirectional input groups).
+- A 2-wire transmitter is an ideal current source from + to −, limited to 3.8–20.5 mA (NAMUR NE 43 style), and 3.6 mA when failed. It needs at least its minimum voltage (10 V here); with less, the current falls to whatever keeps 10 V across it. Reversed or unpowered, it passes no current.
+- Analog inputs and trip amplifiers are 250 Ω. Raw count 4 mA = 0, 20 mA = 27648, and 32767 outside −4864…32511 (VERIFY).
+- Trip amplifier relays energise on alarm, with hysteresis. Supply to the trip amplifier is not modelled.
+- No noise, cable capacitance or screen effects are modelled. Shielding is taught in Learn and Prove.
+
 ## Motor and overload
 - States: stopped, starting, running, stalled, two phases only, coasting.
 - Synchronous speed = 120 × f / poles. Running speed is the nameplate rated speed.

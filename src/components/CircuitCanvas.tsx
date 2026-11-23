@@ -373,6 +373,99 @@ function PartView(props: CanvasProps & { part: PartJson }) {
       }
       break;
     }
+    case 'tx2w': {
+      const A = P('+');
+      const B = P('-');
+      if (A && B) {
+        const x = A[0];
+        const m = (A[1] + B[1]) / 2;
+        const span = (p.params?.rangeHi ?? 100) - (p.params?.rangeLo ?? 0);
+        const stepV = span * 0.05;
+        const code = p.id.replace(/\d+$/, '');
+        els.push(
+          <g key="tx">
+            <line x1={x} y1={A[1]} x2={x} y2={m - 14} stroke={INK} strokeWidth={2.5} />
+            <line x1={x} y1={m + 14} x2={x} y2={B[1]} stroke={INK} strokeWidth={2.5} />
+            <circle cx={x} cy={m} r={14} fill="#fff" stroke={INK} strokeWidth={2.5} />
+            <text x={x} y={m + 4} textAnchor="middle" className="tlabel" style={{ fontWeight: 700 }}>{code}</text>
+            <text x={x - 20} y={m + 36} textAnchor="end" className="state">PV {st.value} {st.unit} · {st.mA} mA</text>
+          </g>,
+        );
+        if (ctl) {
+          els.push(<Btn key="dn" x={x - 130} y={m - 16} w={44} label="−" enabled aria={`${p.id} lower the process value`} testId={`${p.id}:down`} onClick={() => cmd({ kind: 'set', part: p.id, value: (st.value ?? 0) - stepV })} />);
+          els.push(<Btn key="up" x={x - 80} y={m - 16} w={44} label="+" enabled aria={`${p.id} raise the process value`} testId={`${p.id}:up`} onClick={() => cmd({ kind: 'set', part: p.id, value: (st.value ?? 0) + stepV })} />);
+        }
+      }
+      break;
+    }
+    case 'ai':
+    case 'trip': {
+      const A = P('+');
+      const B = P('-');
+      if (A && B) {
+        const x = A[0];
+        const m = (A[1] + B[1]) / 2;
+        const bad = st.signal !== 'OK';
+        els.push(
+          <g key="ai">
+            <line x1={x} y1={A[1]} x2={x} y2={m - 12} stroke={INK} strokeWidth={2.5} />
+            <line x1={x} y1={m + 12} x2={x} y2={B[1]} stroke={INK} strokeWidth={2.5} />
+            <rect x={x - 18} y={m - 12} width={36} height={24} fill="#e8eefb" stroke={INK} strokeWidth={2.5} />
+            <text x={x} y={m + 4} textAnchor="middle" className="tlabel" style={{ fontWeight: 700 }}>{p.type === 'ai' ? 'AI' : 'TA'}</text>
+            <text x={x + 26} y={m - 6} className="state">{st.mA} mA{p.type === 'ai' ? ` · raw ${st.raw}` : ''}</text>
+            <text x={x + 26} y={m + 10} className="state">{st.eng} {st.unit} (scaled {st.rangeLo}–{st.rangeHi})</text>
+            {bad && <text x={x + 26} y={m + 26} className="state state-warn">{st.signal}</text>}
+          </g>,
+        );
+        if (p.type === 'trip') {
+          contact('13', '14', !!st.relays?.hi);
+          contact('23', '24', !!st.relays?.lo);
+          const H = P('13');
+          const L = P('23');
+          if (H) els.push(<text key="hl" x={H[0] - 18} y={H[1] + 30} textAnchor="end" className="plabel">HI</text>);
+          if (L) els.push(<text key="ll" x={L[0] - 18} y={L[1] + 30} textAnchor="end" className="plabel">LO</text>);
+          els.push(<text key="sp" x={x + 26} y={m + (bad ? 42 : 26)} className="tlabel">HI ≥ {p.params?.setHi} · LO ≤ {p.params?.setLo} · hysteresis {p.params?.hyst ?? 0}</text>);
+        }
+      }
+      break;
+    }
+    case 'prox_pnp':
+    case 'prox_npn': {
+      const N = P('BN');
+      const U = P('BU');
+      const K = P('BK');
+      if (N && U && K) {
+        const x = N[0];
+        els.push(
+          <g key="prox">
+            <line x1={x} y1={N[1]} x2={x} y2={N[1] + 15} stroke={INK} strokeWidth={2.5} />
+            <line x1={x} y1={U[1] - 15} x2={x} y2={U[1]} stroke={INK} strokeWidth={2.5} />
+            <line x1={x + 22} y1={K[1]} x2={K[0]} y2={K[1]} stroke={INK} strokeWidth={2.5} />
+            <rect x={x - 22} y={N[1] + 15} width={44} height={U[1] - N[1] - 30} fill="#fff" stroke={INK} strokeWidth={2.5} rx={4} />
+            <text x={x} y={(N[1] + U[1]) / 2 + 4} textAnchor="middle" className="tlabel" style={{ fontWeight: 700 }}>{p.type === 'prox_pnp' ? 'PNP' : 'NPN'}</text>
+            <circle cx={x + 14} cy={N[1] + 24} r={5} fill={st.output ? '#ffb000' : '#fff'} stroke={INK} strokeWidth={1.5} />
+            <text x={K[0] + 14} y={K[1] - 8} className="state">LED {st.output ? 'ON' : 'off'} · {st.value ? 'target in' : 'no target'}</text>
+          </g>,
+        );
+        if (ctl) els.push(<Btn key="tg" x={K[0] + 14} y={N[1] - 6} w={110} label={st.value ? 'Target out' : 'Target in'} kind={st.value ? 'warn' : 'normal'} enabled aria={`${p.id}: ${st.value ? 'move the target away' : 'put a target in front'}`} testId={`${p.id}:target`} onClick={() => cmd({ kind: 'set', part: p.id, value: st.value ? 0 : 1 })} />);
+      }
+      break;
+    }
+    case 'di': {
+      const pts = ['I0', 'I1', 'M'].map((t) => P(t)).filter(Boolean) as XY[];
+      if (pts.length === 3) {
+        const xs = pts.map((q) => q[0]);
+        const y = pts[0][1];
+        els.push(<rect key="card" x={Math.min(...xs) - 22} y={y - 44} width={Math.max(...xs) - Math.min(...xs) + 44} height={44} rx={4} fill="#e8eefb" stroke={INK} strokeWidth={2} />);
+        (['I0', 'I1'] as const).forEach((t) => {
+          const q = P(t)!;
+          const on = !!st.inputs?.[t];
+          els.push(<circle key={`led${t}`} cx={q[0]} cy={y - 28} r={6} fill={on ? '#1f7a3a' : '#fff'} stroke={INK} strokeWidth={1.5} />);
+          els.push(<text key={`lt${t}`} x={q[0] + 10} y={y - 24} className="tlabel" style={{ fontWeight: 700 }}>{on ? 'ON' : 'off'}</text>);
+        });
+      }
+      break;
+    }
     case 'psu24': {
       const pts = ['L', 'N', 'P', 'M'].map((t) => P(t)).filter(Boolean) as XY[];
       if (pts.length === 4) {

@@ -1,0 +1,193 @@
+{
+  "id": "m2-l1",
+  "moduleId": "m2",
+  "version": "1.0.0",
+  "title": "Digital sensors: PNP, NPN and 3-wire wiring",
+  "minutes": 45,
+  "summary": "Wire 3-wire proximity sensors to PLC inputs, understand PNP (sourcing) and NPN (sinking), and fault-find sensor circuits by measuring.",
+  "requires": ["m0-l1"],
+  "why": {
+    "text": "Bottle conveyor CV-3 at the fictional Riverside plant stops when a proximity sensor fails to see the bottles. The maintenance team replaced the sensor with one from the stores, and now the PLC never sees anything at all.\n\nThe new sensor works perfectly: it is just the wrong type. PNP and NPN sensors look the same and use the same colours, but they need different input wiring. In this lesson you learn to tell them apart, wire each one correctly, and find the fault in minutes."
+  },
+  "learn": {
+    "cards": [
+      {
+        "title": "What a proximity sensor does",
+        "text": "An **inductive proximity sensor** detects metal close to its face without touching it. When a target is in range, its output switches and an LED on the sensor lights.\n\nMost industrial sensors are **3-wire** DC devices:\n- **Brown (BN)**: +24 V supply\n- **Blue (BU)**: 0 V supply\n- **Black (BK)**: the switched output to the PLC input\n\nThe sensor needs its supply on brown and blue before it can switch anything. A lit LED means the sensor sees the target, not necessarily that the PLC does."
+      },
+      {
+        "title": "PNP: sourcing",
+        "text": "A **PNP** sensor switches its output to **+24 V** when it detects. It **sources** current into the PLC input.\n\nThe input it feeds must **sink** that current to 0 V, so the input card's common (**M**) goes to **0 V**.\n\nTest it: with the target in front, measure **BK to BU**. You should read about **24 V**. With no target, about 0 V.\n\nPNP is the most common type in Europe and the UK."
+      },
+      {
+        "title": "NPN: sinking",
+        "text": "An **NPN** sensor switches its output to **0 V** when it detects. It **sinks** current from the PLC input.\n\nThe input it feeds must **source** current, so the input card's common (**M**) goes to **+24 V**.\n\nTest it: with the target in front, measure **BK to BU**. You should read about **0 V**, and **BK to BN** about 24 V.\n\nNPN is common on machines from Asia and North America."
+      },
+      {
+        "title": "PLC digital inputs",
+        "text": "A digital input turns ON when enough current flows through it, between the input terminal and its common. In this course an input counts as ON above **15 V** and OFF below **5 V**.\n\nMany input cards can be wired either way: common to 0 V for PNP sensors, or common to +24 V for NPN sensors. **All inputs in one group share one common**, so you cannot mix PNP and NPN in the same group.\n\nA PNP sensor on an NPN-wired group (or the other way round) never turns the input on, even though the sensor's LED lights.",
+        "circuit": "m2-sensors"
+      },
+      {
+        "title": "2-wire sensors, NO and NC",
+        "text": "- **2-wire sensors** sit in series with the input, like a switch. They still need a small current to power themselves when \"off\" (leakage current), which can keep some inputs on. Check the sensor and input data before using one.\n- **NO** (normally open) sensors switch on when they detect. **NC** sensors switch off when they detect. Some sensors have both outputs (black and white).\n\nOrdinary proximity sensors are **not** safety devices. Guards and interlocks need safety-rated sensors and safety circuits."
+      },
+      {
+        "title": "Fault-finding a sensor circuit",
+        "text": "Work from the sensor towards the PLC:\n1. Is the sensor LED on with a target? If not, check **BN–BU is about 24 V**. No supply means no switching.\n2. LED on, measure **BK to the common**: does the input see the voltage it needs?\n3. Input still off? Check the input card's common (**M**) is wired, to the right side of the supply for this sensor type.\n4. The wrong input coming on? Check which terminal the black wire lands on against the drawing."
+      }
+    ]
+  },
+  "show": {
+    "kind": "circuit",
+    "circuit": "m2-sensors",
+    "intro": "Both sensors are wired correctly: B1 (PNP) to input group DI1 with its common at 0 V, and B2 (NPN) to group DI2 with its common at +24 V. Try each one.",
+    "tasks": [
+      { "id": "t1", "text": "Put a target in front of B1 (PNP). Its LED lights and DI1 input I0 turns ON.", "when": [{ "part": "DI1", "input": "I0", "on": true }] },
+      { "id": "t2", "text": "Measure B1 BK to BU on V=. A PNP output sitting at +24 V when it detects.", "measure": { "a": "B1:BK", "b": "B1:BU", "mode": "VDC" } },
+      { "id": "t3", "text": "Put a target in front of B2 (NPN). DI2 input I0 turns ON.", "when": [{ "part": "DI2", "input": "I0", "on": true }] },
+      { "id": "t4", "text": "Measure B2 BK to BU on V=. An NPN output pulls to 0 V when it detects.", "measure": { "a": "B2:BK", "b": "B2:BU", "mode": "VDC" } }
+    ]
+  },
+  "build": {
+    "kind": "circuit",
+    "circuit": "m2-sensors",
+    "guided": {
+      "intro": "Wire **B1 (PNP)** to input **DI1 I0**: its supply and its output. The input card's common is already wired to 0 V. B2 is already wired.",
+      "removeWires": ["b1", "b2", "b3"],
+      "hints": [
+        "Brown is +24 V: wire G1 + to B1 BN.",
+        "Blue is 0 V: wire B1 BU to G1 −.",
+        "Black is the output: wire B1 BK to DI1 I0."
+      ]
+    },
+    "unguided": {
+      "intro": "Now wire **B2 (NPN)** to **DI2 I0**, including its supply and the **input card's common**. B1 is already wired. Think about where the common must go for an NPN sensor.",
+      "removeWires": ["n1", "n2", "n3", "n4"]
+    },
+    "checks": [
+      { "do": { "kind": "switch", "part": "F1", "on": true } },
+      { "do": { "kind": "set", "part": "B1", "value": 0 } },
+      { "do": { "kind": "set", "part": "B2", "value": 0 } },
+      { "wait": 100 },
+      { "expect": { "noShorts": true }, "fail": "There is a short circuit: the 24 V supply switched off. A black output wire may be landed straight on + or −." },
+      { "expect": { "part": "DI1", "input": "I0", "on": false }, "fail": "DI1 I0 is ON with no target in front of B1. Check where the black wire goes." },
+      { "expect": { "part": "DI2", "input": "I0", "on": false }, "fail": "DI2 I0 is ON with no target in front of B2. Check where the black wire goes." },
+      { "do": { "kind": "set", "part": "B1", "value": 1 } },
+      { "wait": 100 },
+      { "expect": { "part": "B1", "output": true }, "fail": "B1 does not switch when the target is in front: it has no supply. Brown to G1 +, blue to G1 −." },
+      { "expect": { "part": "DI1", "input": "I0", "on": true }, "fail": "B1's LED is on, but DI1 I0 stays off. The black wire must go to DI1 I0, and DI1 M to 0 V for a PNP sensor." },
+      { "do": { "kind": "set", "part": "B1", "value": 0 } },
+      { "do": { "kind": "set", "part": "B2", "value": 1 } },
+      { "wait": 100 },
+      { "expect": { "part": "B2", "output": true }, "fail": "B2 does not switch when the target is in front: it has no supply. Brown to G1 +, blue to G1 −." },
+      { "expect": { "part": "DI2", "input": "I0", "on": true }, "fail": "B2's LED is on, but DI2 I0 stays off. For an NPN sensor the input common DI2 M must go to +24 V, and the black wire to DI2 I0." },
+      { "expect": { "part": "DI1", "input": "I0", "on": false }, "fail": "DI1 I0 came on when only B2 detected. Check the black wires." }
+    ]
+  },
+  "break": {
+    "kind": "circuit",
+    "circuit": "m2-sensors",
+    "intro": "The operator says **B1 does not work**. Put a target in front of B1, watch what happens, then measure to find the cause. Choose it when you know.",
+    "faults": [
+      { "id": "m2a-bu", "kind": "wire-open", "wire": "b2", "report": "B1's blue (0 V) wire is broken, so the sensor has no supply." },
+      { "id": "m2a-common", "kind": "wire-open", "wire": "b4", "report": "DI1's common (M) is disconnected from 0 V." },
+      { "id": "m2a-wrongin", "kind": "wire-moved", "wire": "b3", "end": "b", "to": "DI1:I1", "report": "B1's black wire is on input I1 instead of I0." },
+      { "id": "m2a-failed", "kind": "contact-open", "part": "B1", "a": "BN", "b": "BK", "report": "Sensor B1 has failed: its output never switches." }
+    ],
+    "symptomChecks": [
+      { "do": { "kind": "set", "part": "B1", "value": 1 } },
+      { "wait": 100 },
+      { "expect": { "part": "DI1", "input": "I0", "on": true }, "fail": "DI1 I0 does not come on." }
+    ],
+    "parMeasurements": 4,
+    "parSeconds": 240,
+    "extraReports": ["Nothing is wrong: the sensor and input work."]
+  },
+  "prove": {
+    "passMark": 0.8,
+    "questions": [
+      {
+        "id": "q1",
+        "text": "A PNP sensor detects a target. What voltage is on its black output wire, measured to 0 V?",
+        "options": ["About +24 V", "About 0 V", "About 12 V", "230 V"],
+        "answer": 0,
+        "explain": "PNP switches its output to the positive supply. It sources current into the input."
+      },
+      {
+        "id": "q2",
+        "text": "For a PNP sensor, where must the PLC input group's common (M) be connected?",
+        "options": ["0 V", "+24 V", "Earth only", "Nowhere"],
+        "answer": 0,
+        "explain": "The input sinks the sensor's current to 0 V, so its common goes to 0 V."
+      },
+      {
+        "id": "q3",
+        "text": "What are the standard wire colours on a 3-wire DC sensor?",
+        "options": ["Brown +24 V, blue 0 V, black output", "Red +24 V, black 0 V, white output", "Black +24 V, blue output, brown 0 V", "Any colour, they vary"],
+        "answer": 0,
+        "explain": "Brown, blue and black is the usual standard colour coding for DC sensors."
+      },
+      {
+        "id": "q4",
+        "text": "A sensor's LED lights when the target is present, but the PLC input stays off. What is most likely?",
+        "options": ["The output wiring or the input common is wrong or broken, or the sensor is the wrong type for the input", "The sensor has no 24 V supply", "The target is too far away", "The sensor is fine and the PLC program is wrong"],
+        "answer": 0,
+        "explain": "A lit LED means the sensor is powered and detecting. Check the path from black to the input, and the input common."
+      },
+      {
+        "id": "q5",
+        "text": "An NPN sensor detects. What do you read from its black wire to its blue wire?",
+        "options": ["About 0 V", "About 24 V", "About 12 V", "It depends on the target"],
+        "answer": 0,
+        "explain": "NPN pulls its output down to 0 V when it switches, so BK–BU is about 0 V and BK–BN about 24 V."
+      },
+      {
+        "id": "q6",
+        "text": "Can you connect a PNP and an NPN sensor to the same input group with one common?",
+        "options": ["No. The common must go to 0 V for PNP and to +24 V for NPN", "Yes, the card works it out", "Yes, if they are on different terminals", "Only with a 2-wire sensor"],
+        "answer": 0,
+        "explain": "One common can only be at one potential. Put different sensor types on different groups."
+      },
+      {
+        "id": "q7", "critical": true,
+        "text": "Can an ordinary proximity sensor be used to prove a machine guard is closed for safety?",
+        "options": ["No. Safety functions need safety-rated devices and safety circuits", "Yes, if it is a PNP type", "Yes, if two are fitted", "Yes, if the PLC checks it"],
+        "answer": 0,
+        "explain": "Standard sensors can fail in an unsafe way without anyone knowing. Guard interlocks use safety-rated sensors and safety relays or safety PLCs."
+      },
+      {
+        "id": "q8", "critical": true,
+        "text": "Before reaching into a machine to adjust a sensor near moving parts, you must:",
+        "options": ["Stop the machine and isolate it, including stored mechanical energy, following the site procedure", "Ask the operator to watch the stop button", "Work quickly between cycles", "Switch the PLC to stop mode only"],
+        "answer": 0,
+        "explain": "A PLC stop or an operator watching is not isolation. Moving parts can start unexpectedly."
+      },
+      {
+        "id": "q9",
+        "text": "A 2-wire sensor keeps a PLC input on even when it should be off. A likely reason is:",
+        "options": ["Its leakage current, needed to power itself, is enough to turn that input on", "The sensor is PNP", "The cable is too short", "The PLC is in run mode"],
+        "answer": 0,
+        "explain": "2-wire sensors always pass a small current. Check it against the input's OFF current limit."
+      },
+      {
+        "id": "q10",
+        "text": "A sensor's LED stays off with a target in front. What do you measure first?",
+        "options": ["Brown to blue: is there about 24 V supply?", "Black to earth", "The PLC input voltage", "Resistance of the black wire with power on"],
+        "answer": 0,
+        "explain": "No supply, no switching. Check the sensor is powered before anything else. Never test resistance on a live circuit."
+      }
+    ]
+  },
+  "apply": {
+    "intro": "Do this on the training bench while your trainer watches. Your trainer signs it off. An app score alone never makes anyone competent or authorised.",
+    "items": [
+      { "id": "a1", "text": "Identifies a sensor as PNP or NPN from its label or data sheet." },
+      { "id": "a2", "text": "Wires a PNP sensor to a PLC input group with the common at 0 V, and an NPN sensor to a group with the common at +24 V." },
+      { "id": "a3", "text": "Proves the sensor and input work: LED, BK voltage and PLC input status." },
+      { "id": "a4", "text": "Sets the sensing distance safely with the machine isolated." },
+      { "id": "a5", "text": "Finds a seeded sensor fault by measuring, starting from the sensor supply." },
+      { "id": "a6", "text": "Explains why standard sensors are not safety devices." }
+    ]
+  }
+}

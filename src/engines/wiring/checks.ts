@@ -14,6 +14,11 @@ export type Expectation =
   | { part: string; motor: 'running' | 'stopped-or-coasting' | 'not-powered'; direction?: 'forward' | 'reverse' }
   | { part: string; feedsMotor: string }
   | { connected: [string, string] }
+  | { part: string; input: string; on: boolean }
+  | { part: string; output: boolean }
+  | { part: string; mA: [number, number] }
+  | { part: string; value: [number, number] }
+  | { part: string; relay: 'hi' | 'lo'; on: boolean }
   | { noShorts: true }
   | { stable: true };
 
@@ -38,6 +43,11 @@ export function holds(c: Circuit, e: Expectation): boolean {
   if ('connected' in e) return c.nodeOf(e.connected[0]) === c.nodeOf(e.connected[1]);
   if ('feedsMotor' in e) return c.motorFedBy(e.part) === e.feedsMotor;
   const s = c.status(e.part);
+  if ('input' in e) return !!s.inputs?.[e.input] === e.on;
+  if ('output' in e) return !!s.output === e.output;
+  if ('mA' in e) return s.mA !== undefined && s.mA >= e.mA[0] && s.mA <= e.mA[1];
+  if ('value' in e) return s.eng !== undefined && s.eng >= e.value[0] && s.eng <= e.value[1];
+  if ('relay' in e) return !!s.relays?.[e.relay] === e.on;
   if ('energised' in e) return !!s.energised === e.energised;
   if ('tripped' in e) return !!s.tripped === e.tripped;
   if ('lit' in e) return !!s.lit === e.lit;
@@ -52,8 +62,10 @@ export function holds(c: Circuit, e: Expectation): boolean {
   return false;
 }
 
-export function runChecks(def: CircuitJson, wires: WireJson[], steps: CheckStep[], faults: FaultJson[] = []): CheckResult {
+/** `before` replays settings the learner made (such as analog scaling) on the fresh copy before the checks run. */
+export function runChecks(def: CircuitJson, wires: WireJson[], steps: CheckStep[], faults: FaultJson[] = [], before: Command[] = []): CheckResult {
   const c = new Circuit(def, faults, wires);
+  for (const cmd of before) c.command(cmd);
   const total = steps.filter((s) => 'expect' in s).length;
   let passedCount = 0;
   for (const s of steps) {

@@ -1,0 +1,52 @@
+{
+  "templates": [
+    {
+      "number": 1,
+      "title": "DOL motor with start/stop",
+      "moduleId": "m3",
+      "id": null
+    },
+    {
+      "number": 2,
+      "title": "Forward/reverse conveyor",
+      "moduleId": "m3",
+      "id": null
+    },
+    {
+      "number": 3,
+      "title": "Star-delta fan",
+      "moduleId": "m3",
+      "id": null
+    },
+    {
+      "number": 4,
+      "title": "4–20 mA tank level with alarms",
+      "moduleId": "m2",
+      "id": "t4-tank"
+    },
+    {
+      "number": 5,
+      "title": "VFD pump with pressure PID",
+      "moduleId": "m5",
+      "id": null
+    },
+    {
+      "number": 6,
+      "title": "Duty/standby pump station",
+      "moduleId": "m6",
+      "id": null
+    },
+    {
+      "number": 7,
+      "title": "Three-conveyor sequence over PROFINET",
+      "moduleId": "m8",
+      "id": null
+    },
+    {
+      "number": 8,
+      "title": "Capstone: small process plant, from scope to handover",
+      "moduleId": "m10",
+      "id": null
+    }
+  ]
+}

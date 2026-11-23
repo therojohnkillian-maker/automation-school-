@@ -1,0 +1,62 @@
+{
+  "id": "t4-tank",
+  "number": 4,
+  "moduleId": "m2",
+  "version": "1.0.0",
+  "title": "4–20 mA tank level with alarms",
+  "summary": "Tank T-101 level: a 2-wire level transmitter, a trip amplifier for HIGH and LOW alarm lamps, and a PLC analog input, all in one series loop.",
+  "circuit": "t4-tank",
+  "brief": "**Client:** Riverside bottling plant (fictional).\n**Equipment:** syrup tank **T-101**, 4 m tall.\n\nThe operators need to see the tank level on the PLC screen, and get a **HIGH** lamp before the tank overfills and a **LOW** lamp before the pump runs dry.\n\n**Scope**\n- Level transmitter **LT1**: 2-wire, 0–4 m, 4–20 mA, mounted at the tank bottom.\n- Trip amplifier **KF1** in the panel: HIGH relay at 3.5 m, LOW relay at 0.5 m, 0.1 m hysteresis.\n- Lamps **H1 HIGH** and **H2 LOW** on the panel door.\n- PLC analog input **AI1**, scaled 0–4 m.\n- One series loop: G1 +24 V → LT1 → KF1 → AI1 → G1 0 V.\n\n**Acceptance:** 5-point loop check within ±0.5 % of span, and both alarms proven at their set points.",
+  "ioList": [
+    { "tag": "LT1", "description": "T-101 level transmitter", "type": "2-wire 4–20 mA, loop-powered", "range": "0–4 m", "connection": "+ from G1 +24 V, − to KF1 +" },
+    { "tag": "KF1", "description": "Level trip amplifier (input in series)", "type": "4–20 mA input, 250 Ω, 2 relays", "range": "0–4 m", "connection": "+ from LT1 −, − to AI1 +" },
+    { "tag": "KF1 13-14", "description": "HIGH alarm relay contact", "type": "Relay NO", "range": "Set 3.5 m, reset 3.4 m", "connection": "+24 V → 13, 14 → H1" },
+    { "tag": "KF1 23-24", "description": "LOW alarm relay contact", "type": "Relay NO", "range": "Set 0.5 m, reset 0.6 m", "connection": "+24 V → 23, 24 → H2" },
+    { "tag": "AI1", "description": "PLC analog input, T-101 level", "type": "AI 4–20 mA, 250 Ω", "range": "0–4 m (raw 0–27648)", "connection": "+ from KF1 −, − to G1 0 V" },
+    { "tag": "H1", "description": "Lamp: T-101 level HIGH", "type": "24 V DC lamp", "range": "—", "connection": "KF1 14 → H1 → 0 V" },
+    { "tag": "H2", "description": "Lamp: T-101 level LOW", "type": "24 V DC lamp", "range": "—", "connection": "KF1 24 → H2 → 0 V" }
+  ],
+  "logic": [
+    { "function": "Level display", "condition": "Always", "action": "AI1 shows level = (mA − 4) ÷ 16 × 4 m" },
+    { "function": "HIGH alarm", "condition": "Level ≥ 3.5 m", "action": "KF1 HIGH relay energises, H1 lights. Resets below 3.4 m." },
+    { "function": "LOW alarm", "condition": "Level ≤ 0.5 m", "action": "KF1 LOW relay energises, H2 lights. Resets above 0.6 m." },
+    { "function": "Loop fault", "condition": "Loop current below 3.6 mA", "action": "AI1 reports wire break. KF1 sees a very low level and lights LOW: the operator must not trust the reading." }
+  ],
+  "logicNote": "The alarm relays here energise on alarm, to keep the example simple. Alarms that protect plant or people are often designed **fail-safe** (de-energised on alarm, so a broken wire also gives an alarm). Your site's design rules decide which.",
+  "schedule": [
+    { "step": "Permit, isolation and prove dead at the panel", "who": "Technician + authorised person", "hours": 0.5 },
+    { "step": "Mount LT1 and run the field cable to X1", "who": "2 technicians", "hours": 3 },
+    { "step": "Terminate the loop: G1, LT1, KF1, AI1, screen earthed at the panel only", "who": "Technician", "hours": 1.5 },
+    { "step": "Set KF1 range and set points; scale AI1 0–4 m", "who": "Technician", "hours": 0.5 },
+    { "step": "5-point loop check and alarm tests, record as-found and as-left", "who": "Technician + operator", "hours": 1 },
+    { "step": "Update drawings and hand over to operations", "who": "Technician", "hours": 0.5 }
+  ],
+  "testSheet": [
+    { "id": "r0", "text": "Set LT1 to 0 m (0 %). AI1 current", "setup": [{ "kind": "set", "part": "LT1", "value": 0 }], "part": "AI1", "field": "mA", "unit": "mA" },
+    { "id": "r1", "text": "Set LT1 to 1 m (25 %). AI1 current", "setup": [{ "kind": "set", "part": "LT1", "value": 1 }], "part": "AI1", "field": "mA", "unit": "mA" },
+    { "id": "r2", "text": "Set LT1 to 2 m (50 %). AI1 level shown", "setup": [{ "kind": "set", "part": "LT1", "value": 2 }], "part": "AI1", "field": "eng", "unit": "m" },
+    { "id": "r3", "text": "Set LT1 to 3 m (75 %). AI1 current", "setup": [{ "kind": "set", "part": "LT1", "value": 3 }], "part": "AI1", "field": "mA", "unit": "mA" },
+    { "id": "r4", "text": "Set LT1 to 4 m (100 %). AI1 current", "setup": [{ "kind": "set", "part": "LT1", "value": 4 }], "part": "AI1", "field": "mA", "unit": "mA" },
+    { "id": "a1", "text": "Raise LT1 to 3.6 m. Is H1 HIGH lit?", "setup": [{ "kind": "set", "part": "LT1", "value": 3.6 }], "part": "H1", "field": "lit", "unit": "" },
+    { "id": "a2", "text": "Lower LT1 to 3.2 m. Is H1 HIGH lit?", "setup": [{ "kind": "set", "part": "LT1", "value": 3.6 }, { "kind": "set", "part": "LT1", "value": 3.2 }], "part": "H1", "field": "lit", "unit": "" },
+    { "id": "a3", "text": "Lower LT1 to 0.4 m. Is H2 LOW lit?", "setup": [{ "kind": "set", "part": "LT1", "value": 0.4 }], "part": "H2", "field": "lit", "unit": "" },
+    { "id": "a4", "text": "Raise LT1 to 1 m. Is H2 LOW lit?", "setup": [{ "kind": "set", "part": "LT1", "value": 0.4 }, { "kind": "set", "part": "LT1", "value": 1 }], "part": "H2", "field": "lit", "unit": "" }
+  ],
+  "faults": [
+    { "id": "t4-break", "kind": "wire-open", "wire": "l3", "report": "The loop is open between KF1 − and AI1 + (wire break). AI1 reads 0 mA and KF1 shows LOW." },
+    { "id": "t4-resist", "kind": "high-resistance", "wire": "l2", "ohms": 400, "report": "A high-resistance joint in the LT1 − to KF1 + wire limits the loop current near full scale." },
+    { "id": "t4-scale", "kind": "config", "part": "AI1", "rangeLo": 0, "rangeHi": 5, "report": "AI1 is scaled 0–5 m instead of 0–4 m, so the PLC shows the wrong level." },
+    { "id": "t4-lamp", "kind": "load-open", "part": "H1", "report": "Lamp H1 HIGH has failed. The HIGH relay operates but the lamp does not light." }
+  ],
+  "faultChecks": [
+    { "do": { "kind": "set", "part": "LT1", "value": 2 } },
+    { "wait": 50 },
+    { "expect": { "part": "AI1", "value": [1.95, 2.05] }, "fail": "Wrong level at 2 m." },
+    { "do": { "kind": "set", "part": "LT1", "value": 3.8 } },
+    { "wait": 50 },
+    { "expect": { "part": "AI1", "value": [3.75, 3.85] }, "fail": "Wrong level at 3.8 m." },
+    { "expect": { "part": "H1", "lit": true }, "fail": "No HIGH lamp at 3.8 m." }
+  ],
+  "extraReports": ["Nothing is wrong: the loop and alarms work."],
+  "modelAnswer": "**Loop check:** 0 m = 4 mA, 1 m = 8 mA, 2 m = 12 mA (AI1 shows 2.00 m), 3 m = 16 mA, 4 m = 20 mA.\n\n**Alarms:** H1 lights at 3.6 m and goes out at 3.2 m (below the 3.4 m reset). H2 lights at 0.4 m and goes out at 1 m (above the 0.6 m reset).\n\n**Loop voltage:** at 20 mA the two 250 Ω inputs drop 10 V in total, leaving 14 V for LT1. That is above its 10 V minimum. Allow no more than 200 Ω for cable and terminals: (24 − 10 − 10) V ÷ 0.020 A = 200 Ω.\n\n**Fault-finding:**\n- Wire break: AI1 reads 0 mA (wire break), and KF1 lights LOW because it sees a very low level.\n- High-resistance joint: readings are right at low level but stop rising near the top. Measure the voltage across LT1: it falls to its 10 V minimum.\n- Wrong scaling: the current is right (12 mA at 2 m) but AI1 shows 2.5 m. Fix the scaling, not the wiring.\n- Failed lamp: the KF1 HIGH relay operates and 24 V reaches H1, but it does not light."
+}

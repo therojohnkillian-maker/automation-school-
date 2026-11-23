@@ -19,4 +19,11 @@ Items that must be checked before technicians train on the related content.
 | 13 | M1: "230 V nominal is often 235–245 V on site" | M1 L1 | Open |
 | 14 | M1: IEC 81346-2 letter codes (P for lamps, Q for power switching) and older codes (KM, H) as described | M1 L2 | Open |
 | 15 | M1: cross-reference format "/3.4" (page.column) described as common, not universal | M1 L2 | Open |
+| 16 | M2: digital input ON above 15 V / OFF below 5 V (IEC 61131-2 type 1 style) | DI engine, M2 L1 | Open |
+| 17 | M2: 3-wire sensor colours BN +, BU 0 V, BK output | M2 L1 | Open |
+| 18 | M2: transmitter minimum voltage "typically 10–12 V" and 700 Ω example | Loop engine, M2 L2 | Open |
+| 19 | M2: Pt100 = 100 Ω at 0 °C, about 138.5 Ω at 100 °C | M2 L2 | Open |
+| 20 | M2: raw count 32767 reported outside −4864…32511 (wire break / overflow) | Loop engine | Open |
+| 21 | M2: Ex i (intrinsic safety) precautions as worded | M2 L2 | Open |
+| 22 | T4: note that protective alarms are often fail-safe (de-energise on alarm) | Template T4 | Open |
 

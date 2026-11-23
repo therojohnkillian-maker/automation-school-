@@ -59,6 +59,11 @@ describe('lessons', () => {
           expect(r.failures).toEqual([]);
           expect(r.passed).toBe(true);
         });
+        if (b.unguidedStart.length) {
+          it('the unguided starting settings must be corrected by the learner', () => {
+            expect(runChecks(def, def.wires, b.checks, [], b.unguidedStart).passed).toBe(false);
+          });
+        }
         it('removed wires exist, and with them removed the checks fail', () => {
           for (const set of [b.guided.removeWires, b.unguided.removeWires]) {
             for (const id of set) expect(def.wires.some((w) => w.id === id), id).toBe(true);
@@ -115,6 +120,32 @@ describe('lessons', () => {
           }
         });
       }
+    });
+  }
+});
+
+import { templates, templateCatalog } from '../../src/content';
+import { expectedRow } from '../../src/features/templates/TemplatePage';
+
+describe('templates', () => {
+  it('catalog lists eight templates; built ones exist', () => {
+    expect(templateCatalog.templates).toHaveLength(8);
+    for (const t of templateCatalog.templates) if (t.id) expect(templates.find((x) => x.id === t.id), t.id).toBeTruthy();
+  });
+  for (const t of templates) {
+    describe(t.id, () => {
+      it('has at least three faults, each with a symptom, and the healthy circuit passes', () => {
+        const def = circuit(t.circuit);
+        expect(runChecks(def, def.wires, t.faultChecks).passed).toBe(true);
+        expect(t.faults.length).toBeGreaterThanOrEqual(3);
+        for (const f of t.faults) expect(runChecks(def, def.wires, t.faultChecks, [f as FaultJson]).passed, f.id).toBe(false);
+      });
+      it('test sheet rows give the expected values', () => {
+        const got = Object.fromEntries(t.testSheet.map((r) => [r.id, expectedRow(t, r)]));
+        if (t.id === 't4-tank') {
+          expect(got).toMatchObject({ r0: 4, r1: 8, r2: 2, r3: 16, r4: 20, a1: true, a2: false, a3: true, a4: false });
+        }
+      });
     });
   }
 });

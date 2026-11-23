@@ -30,7 +30,7 @@ function ViewSwitch({ view, setView }: { view: 'drawing' | '3d'; setView: (v: 'd
 type BuildC = Extract<Lesson['build'], { kind: 'circuit' }>;
 type BreakC = Extract<Lesson['break'], { kind: 'circuit' }>;
 
-function EventLog({ circuit }: { circuit: Circuit }) {
+export function EventLog({ circuit }: { circuit: Circuit }) {
   const items = circuit.log.slice(-6).reverse();
   return (
     <div className="eventlog" aria-label="Event log">
@@ -112,7 +112,19 @@ export function BuildCircuitStep({ lesson, progress, done, record }: StepProps) 
   const def = circuitById(build.circuit);
   const guided = !progress.steps.buildGuided;
   const remove = guided ? build.guided.removeWires : build.unguided.removeWires;
-  const sim = useSim(() => new Circuit(def, [], def.wires.filter((w) => !remove.includes(w.id))), [def, guided]);
+  const start = guided ? [] : build.unguidedStart;
+  const configure = guided ? build.guided.configure : build.unguided.configure;
+  const sim = useSim(() => {
+    const c = new Circuit(def, [], def.wires.filter((w) => !remove.includes(w.id)));
+    for (const cmd of start) c.command(cmd);
+    return c;
+  }, [def, guided]);
+  // Analog scaling the learner has set, replayed when the wiring is checked.
+  const [scaling, setScaling] = useState<Record<string, { lo: string; hi: string }>>({});
+  const scalingCommands = () =>
+    Object.entries(scaling)
+      .filter(([, v]) => v.lo.trim() !== '' && v.hi.trim() !== '' && !Number.isNaN(Number(v.lo)) && !Number.isNaN(Number(v.hi)))
+      .map(([part, v]) => ({ kind: 'config' as const, part, rangeLo: Number(v.lo), rangeHi: Number(v.hi) }));
   const [tool, setTool] = useState<'wire' | 'meter'>('wire');
   const [sel, setSel] = useState<string | null>(null);
   const [selWire, setSelWire] = useState<string | null>(null);
@@ -136,7 +148,7 @@ export function BuildCircuitStep({ lesson, progress, done, record }: StepProps) 
   };
 
   const check = async () => {
-    const r = runChecks(def, sim.circuit.wires, build.checks);
+    const r = runChecks(def, sim.circuit.wires, build.checks, [], [...start, ...scalingCommands()]);
     await record({ kind: 'build', lessonId: lesson.id, mode: guided ? 'guided' : 'unguided', passed: r.passed, failure: r.failures[0] ?? null, wires: sim.circuit.wires.length, hints });
     setResult(r.passed ? { passed: true, text: `All ${r.total} checks passed. The starter works correctly.` } : { passed: false, text: r.failures[0] });
   };
@@ -163,7 +175,7 @@ export function BuildCircuitStep({ lesson, progress, done, record }: StepProps) 
           />
           <div className="actions">
             {selWire && <button className="danger" onClick={() => { sim.apply((c) => c.removeWire(selWire)); setSelWire(null); }}>Delete selected wire</button>}
-            <button onClick={sim.reset}>Start again</button>
+            <button onClick={() => { sim.reset(); setScaling({}); }}>Start again</button>
             <button className="primary" onClick={check}>Check my wiring</button>
           </div>
           {tool === 'wire' && <p className="hint">{sel ? `From ${sel}: tap the terminal to wire to.` : 'Tap a terminal to start a wire.'}</p>}
@@ -171,6 +183,34 @@ export function BuildCircuitStep({ lesson, progress, done, record }: StepProps) 
         <aside className="lab-side">
           {result && <Notice kind={result.passed ? 'ok' : 'error'}>{result.text}</Notice>}
           {warn && <Notice kind="warn">{warn}</Notice>}
+          {configure.map((part) => {
+            const st = sim.circuit.status(part);
+            const v = scaling[part] ?? { lo: String(st.rangeLo ?? ''), hi: String(st.rangeHi ?? '') };
+            return (
+              <div key={part} className="config-panel">
+                <h3>{part} scaling</h3>
+                <p className="hint">Set what 4 mA and 20 mA mean, in {st.unit}. Take the range from the transmitter's label.</p>
+                <div className="reading-row">
+                  <label htmlFor={`lo-${part}`}>4 mA =</label>
+                  <input id={`lo-${part}`} inputMode="decimal" value={v.lo} onChange={(e) => setScaling({ ...scaling, [part]: { ...v, lo: e.target.value } })} />
+                  <span className="unit">{st.unit}</span>
+                </div>
+                <div className="reading-row">
+                  <label htmlFor={`hi-${part}`}>20 mA =</label>
+                  <input id={`hi-${part}`} inputMode="decimal" value={v.hi} onChange={(e) => setScaling({ ...scaling, [part]: { ...v, hi: e.target.value } })} />
+                  <span className="unit">{st.unit}</span>
+                </div>
+                <button type="button" onClick={() => {
+                  const lo = Number(v.lo);
+                  const hi = Number(v.hi);
+                  if (!Number.isNaN(lo) && !Number.isNaN(hi) && hi !== lo) {
+                    setScaling({ ...scaling, [part]: v });
+                    sim.apply((c) => c.command({ kind: 'config', part, rangeLo: lo, rangeHi: hi }));
+                  }
+                }}>Apply scaling</button>
+              </div>
+            );
+          })}
           {guided && (
             <>
               <h3>Hints</h3>

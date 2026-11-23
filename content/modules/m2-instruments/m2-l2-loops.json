@@ -1,0 +1,219 @@
+{
+  "id": "m2-l2",
+  "moduleId": "m2",
+  "version": "1.0.0",
+  "title": "4–20 mA loops: wiring, scaling and loop checks",
+  "minutes": 60,
+  "summary": "Wire a 2-wire pressure transmitter to a PLC analog input, scale it, check the loop, and find loop faults. Also covers RTDs, thermocouples and shielding.",
+  "requires": ["m0-l1"],
+  "why": {
+    "text": "The filler at the fictional Riverside plant needs the line pressure on its operator screen. A new pressure transmitter, **PT1**, has been fitted to the pipe, and a cable runs back to the panel.\n\nYou will wire the loop, set the scaling so the PLC shows **bar**, and prove the reading is right from 0 to 10 bar. Then you will find faults that make a loop read wrong, zero, or full scale. These are the faults that shut lines down."
+  },
+  "learn": {
+    "cards": [
+      {
+        "title": "Why 4–20 mA",
+        "text": "An analog signal carries a **value** (pressure, level, temperature, flow), not just on or off.\n\nThe usual industrial signal is **4–20 mA**: 4 mA at the bottom of the range, 20 mA at the top. A current is not affected by cable resistance (within limits), so it travels long distances well.\n\nThe bottom is 4 mA, not 0, so that **0 mA means a fault**: a broken wire or a dead transmitter can be told apart from a real zero reading. This is called a **live zero**."
+      },
+      {
+        "title": "2-wire and 4-wire transmitters",
+        "text": "- A **2-wire** (loop-powered) transmitter takes its power from the loop current itself. The same two wires carry power and signal. Most pressure and level transmitters are 2-wire.\n- A **4-wire** transmitter has its own power supply and actively drives the 4–20 mA output.\n\nPolarity matters. Wired backwards, a 2-wire transmitter passes no current (most have reverse-polarity protection)."
+      },
+      {
+        "title": "The loop path",
+        "text": "Follow the current around the loop in this lesson:\n\n**G1 +24 V → PT1 + → PT1 − → AI1 + → AI1 − → G1 0 V**\n\nThe transmitter sets the current. The PLC analog input measures it across its internal resistor (250 Ω here). The same current flows everywhere in a series loop, so you can add other devices in the loop, such as a display or a trip amplifier, as long as there is enough voltage.",
+        "circuit": "m2-loop"
+      },
+      {
+        "title": "Scaling",
+        "text": "Scaling turns the current into engineering units:\n\n**value = low + (mA − 4) ÷ 16 × (high − low)**\n\nFor PT1 (0–10 bar): 12 mA → 0 + 8 ÷ 16 × 10 = **5 bar**.\n\nSiemens-style PLCs first convert the current to a **raw count**: 4 mA = 0, 20 mA = 27648. So 12 mA = 13824, and the program scales that count to bar.\n\nThe PLC's scaling must match the transmitter's range. If PT1 is 0–10 bar but the PLC is scaled 0–16 bar, every reading is wrong."
+      },
+      {
+        "title": "Loop voltage and resistance",
+        "text": "A 2-wire transmitter needs a minimum voltage across it to work, typically **10–12 V**. Everything else in the loop drops voltage: V = I × R.\n\nWith a 24 V supply, a transmitter needing 10 V, and 20 mA at full scale:\n(24 − 10) V ÷ 0.020 A = **700 Ω** maximum total loop resistance.\n\nA 250 Ω input leaves 450 Ω for cable, barriers and terminals. A corroded terminal can push it over, and the reading then stops rising before full scale.\n\nUseful check: the voltage across a 250 Ω input is **1 V at 4 mA, 5 V at 20 mA**."
+      },
+      {
+        "title": "Out-of-range and fault signals",
+        "text": "Many transmitters and inputs follow the NAMUR NE 43 recommendation:\n- **3.8–20.5 mA**: a valid measurement (a little beyond the range is allowed)\n- **below 3.6 mA** or **above 21 mA**: a failure signal\n\nSo a reading of 0 mA usually means a **wire break**. 3.6 mA can mean the transmitter has detected its own fault. A very high current, far above 20 mA, can mean a **short circuit** in the field wiring."
+      },
+      {
+        "title": "Temperature: RTDs and thermocouples",
+        "text": "- An **RTD** (for example a **Pt100**) changes resistance with temperature: 100 Ω at 0 °C, about 138.5 Ω at 100 °C. The cable resistance adds error, so 3-wire and 4-wire connections are used to cancel it.\n- A **thermocouple** makes a small voltage from two different metals joined at the hot end. It must be extended with the matching **compensating cable**, never ordinary copper wire, and the instrument corrects for the temperature at the cold end.\n\nOften a head-mounted **temperature transmitter** converts either one into 4–20 mA."
+      },
+      {
+        "title": "Shielding and loop checks",
+        "text": "- Use **twisted, screened (shielded)** cable for analog signals. Earth the screen at **one end only**, usually in the panel, to avoid earth loops. Keep signal cables away from motor and drive cables.\n- A **loop check** proves the whole chain: transmitter, wiring, input and scaling. Apply known values (for example 0, 25, 50, 75 and 100 % of range), and record what the PLC shows **as found**. Adjust if outside tolerance, then record **as left**.\n- Before working on a live process instrument, agree it with operations: putting the loop in manual or taking it out of service can affect the plant."
+      }
+    ]
+  },
+  "show": {
+    "kind": "circuit",
+    "circuit": "m2-loop",
+    "intro": "This loop is wired and scaled 0–10 bar. PT1 starts at 5 bar. Use the **− / +** buttons on PT1 to change the pressure.",
+    "tasks": [
+      { "id": "t1", "text": "Check the reading at 5 bar: AI1 shows 12 mA and 5 bar.", "when": [{ "part": "AI1", "mA": [11.9, 12.1] }] },
+      { "id": "t2", "text": "Measure across the analog input, AI1 + to −, on V=. 12 mA × 250 Ω = 3 V.", "measure": { "a": "AI1:+", "b": "AI1:-", "mode": "VDC" } },
+      { "id": "t3", "text": "Measure across the transmitter, PT1 + to −, on V=. It has the rest of the 24 V.", "measure": { "a": "PT1:+", "b": "PT1:-", "mode": "VDC" } },
+      { "id": "t4", "text": "Raise the pressure to the top of the range, 10 bar. AI1 shows 20 mA.", "when": [{ "part": "AI1", "mA": [19.9, 20.1] }] },
+      { "id": "t5", "text": "Lower it to 0 bar. AI1 shows 4 mA, not 0: the live zero.", "when": [{ "part": "AI1", "mA": [3.9, 4.1] }] }
+    ]
+  },
+  "build": {
+    "kind": "circuit",
+    "circuit": "m2-loop",
+    "guided": {
+      "intro": "The panel side is wired. Wire the **field side** of the loop: X1:1 to PT1 +, and PT1 − back to X1:2. Watch the polarity.",
+      "removeWires": ["f1", "f2"],
+      "hints": [
+        "X1:1 brings +24 V from the panel. It goes to the transmitter's + terminal.",
+        "The current returns from PT1 − on X1:2, which goes on to AI1 +.",
+        "Use the − / + buttons on PT1 to check the reading follows the pressure."
+      ]
+    },
+    "unguided": {
+      "intro": "Wire the **whole loop** (panel and field), then **scale AI1** to match PT1's range. AI1 has been left at a default of 0–100. Read PT1's range from its label.",
+      "removeWires": ["p1", "p2", "p3", "f1", "f2"],
+      "configure": ["AI1"]
+    },
+    "unguidedStart": [{ "kind": "config", "part": "AI1", "rangeLo": 0, "rangeHi": 100 }],
+    "checks": [
+      { "do": { "kind": "switch", "part": "F1", "on": true } },
+      { "do": { "kind": "set", "part": "PT1", "value": 5 } },
+      { "wait": 50 },
+      { "expect": { "noShorts": true }, "fail": "There is a short circuit: the 24 V supply switched off. Check nothing joins G1 + straight to G1 −." },
+      { "expect": { "part": "AI1", "mA": [0.5, 100] }, "fail": "No current flows in the loop (0 mA, wire break). Trace G1 + → X1:1 → PT1 + → PT1 − → X1:2 → AI1 + → AI1 − → G1 −. Check the transmitter polarity." },
+      { "expect": { "part": "AI1", "mA": [11.9, 12.1] }, "fail": "At 5 bar the loop should carry 12 mA. Check the transmitter is in series with the input, not across the supply." },
+      { "expect": { "part": "AI1", "value": [4.95, 5.05] }, "fail": "The current is right (12 mA) but AI1 does not show 5 bar. Set AI1's scaling to PT1's range: 4 mA = 0, 20 mA = 10 bar." },
+      { "do": { "kind": "set", "part": "PT1", "value": 0 } },
+      { "wait": 50 },
+      { "expect": { "part": "AI1", "value": [-0.05, 0.05] }, "fail": "At 0 bar AI1 should show 0 bar (4 mA). Check the scaling's low value." },
+      { "do": { "kind": "set", "part": "PT1", "value": 10 } },
+      { "wait": 50 },
+      { "expect": { "part": "AI1", "mA": [19.9, 20.1] }, "fail": "At 10 bar the loop should reach 20 mA. Something is limiting the current: check for extra resistance in the loop." },
+      { "expect": { "part": "AI1", "value": [9.95, 10.05] }, "fail": "At 10 bar AI1 should show 10 bar. Check the scaling's high value." }
+    ]
+  },
+  "break": {
+    "kind": "circuit",
+    "circuit": "m2-loop",
+    "intro": "The operator says the **line pressure reading is wrong**. Change PT1's pressure, compare what AI1 shows, and measure around the loop. Choose the cause when you know.",
+    "faults": [
+      { "id": "m2b-break", "kind": "wire-open", "wire": "f2", "report": "The field wire from PT1 − to X1:2 is broken (wire break)." },
+      { "id": "m2b-resist", "kind": "high-resistance", "wire": "f1", "ohms": 600, "report": "A corroded terminal on the PT1 + wire adds resistance, so the reading cannot reach full scale." },
+      { "id": "m2b-short", "kind": "extra-wire", "a": "PT1:+", "b": "PT1:-", "report": "The field cable is shorted at the transmitter (+ to −)." },
+      { "id": "m2b-failed", "kind": "tx-failed", "part": "PT1", "report": "Transmitter PT1 has failed and is sending its failure current (3.6 mA)." },
+      { "id": "m2b-scale", "kind": "config", "part": "AI1", "rangeLo": 0, "rangeHi": 16, "report": "AI1 is scaled 0–16 bar, but PT1 is a 0–10 bar transmitter." }
+    ],
+    "symptomChecks": [
+      { "do": { "kind": "set", "part": "PT1", "value": 5 } },
+      { "wait": 50 },
+      { "expect": { "part": "AI1", "value": [4.9, 5.1] }, "fail": "Wrong reading at 5 bar." },
+      { "do": { "kind": "set", "part": "PT1", "value": 10 } },
+      { "wait": 50 },
+      { "expect": { "part": "AI1", "value": [9.9, 10.1] }, "fail": "Wrong reading at 10 bar." }
+    ],
+    "parMeasurements": 4,
+    "parSeconds": 300,
+    "extraReports": ["Nothing is wrong: the reading is correct."]
+  },
+  "prove": {
+    "passMark": 0.8,
+    "questions": [
+      {
+        "id": "q1",
+        "text": "A 0–10 bar transmitter sends 12 mA. What pressure is that?",
+        "options": ["5 bar", "6 bar", "7.5 bar", "1.2 bar"],
+        "answer": 0,
+        "explain": "(12 − 4) ÷ 16 × 10 = 5 bar."
+      },
+      {
+        "id": "q2",
+        "text": "A 0–4 m level transmitter sends 8 mA. What level is that?",
+        "options": ["1 m", "2 m", "0.5 m", "3 m"],
+        "answer": 0,
+        "explain": "(8 − 4) ÷ 16 × 4 = 1 m."
+      },
+      {
+        "id": "q3",
+        "text": "On a Siemens-style input (4 mA = 0, 20 mA = 27648), what raw count is 12 mA?",
+        "options": ["13824", "27648", "6912", "0"],
+        "answer": 0,
+        "explain": "12 mA is halfway between 4 and 20, so half of 27648 = 13824."
+      },
+      {
+        "id": "q4",
+        "text": "Why does the signal start at 4 mA instead of 0 mA?",
+        "options": ["So 0 mA can be recognised as a fault, such as a broken wire", "To save power", "Because PLCs cannot read 0 mA", "To make scaling easier"],
+        "answer": 0,
+        "explain": "The live zero lets the system tell a real zero reading from a dead loop."
+      },
+      {
+        "id": "q5",
+        "text": "An analog input reads 0 mA. What is the most likely cause?",
+        "options": ["A broken wire or no loop supply", "The process is at zero", "The scaling is wrong", "The transmitter is at full scale"],
+        "answer": 0,
+        "explain": "A healthy loop at the bottom of the range still carries 4 mA."
+      },
+      {
+        "id": "q6",
+        "text": "Supply 24 V, transmitter needs at least 10 V, full scale 20 mA. What is the maximum total loop resistance?",
+        "options": ["700 Ω", "1200 Ω", "500 Ω", "250 Ω"],
+        "answer": 0,
+        "explain": "(24 − 10) ÷ 0.020 = 700 Ω, including the input resistor."
+      },
+      {
+        "id": "q7",
+        "text": "What voltage appears across a 250 Ω analog input at 20 mA?",
+        "options": ["5 V", "1 V", "20 V", "0.25 V"],
+        "answer": 0,
+        "explain": "V = I × R = 0.020 × 250 = 5 V. At 4 mA it is 1 V."
+      },
+      {
+        "id": "q8",
+        "text": "Why is a Pt100 RTD often connected with 3 or 4 wires?",
+        "options": ["To cancel the error from cable resistance", "To supply more current", "Because it needs 24 V", "To make it a 4–20 mA signal"],
+        "answer": 0,
+        "explain": "Cable resistance adds to the RTD's resistance and looks like extra temperature. Extra wires let the instrument subtract it."
+      },
+      {
+        "id": "q9",
+        "text": "A thermocouple must be extended to the panel with:",
+        "options": ["Matching thermocouple compensating cable", "Ordinary copper cable", "Screened 4–20 mA cable", "Any cable if it is short"],
+        "answer": 0,
+        "explain": "Joining in ordinary copper creates new junctions and wrong readings."
+      },
+      {
+        "id": "q10",
+        "text": "Where is the screen of an analog signal cable normally earthed?",
+        "options": ["At one end only, usually in the panel", "At both ends", "Nowhere", "At every junction box"],
+        "answer": 0,
+        "explain": "Earthing both ends can let current flow in the screen (an earth loop) and add noise."
+      },
+      {
+        "id": "q11", "critical": true,
+        "text": "You need to disconnect a transmitter that controls a running process. What must you do first?",
+        "options": ["Agree it with operations so the loop can be put in manual or the plant made safe", "Disconnect it quickly between batches", "Tell the operator afterwards", "Nothing, it is only a signal"],
+        "answer": 0,
+        "explain": "Losing a control signal can drive valves or pumps to unsafe positions. The process must be made safe first."
+      },
+      {
+        "id": "q12", "critical": true,
+        "text": "A transmitter is in a hazardous area and marked as intrinsically safe (Ex i). Before working on it, you need:",
+        "options": ["The right permit, Ex training and authorisation, and approved test equipment", "Only a voltage indicator", "Nothing, intrinsically safe means anyone can work on it", "To switch off the PLC"],
+        "answer": 0,
+        "explain": "Intrinsic safety depends on approved equipment and wiring rules. Work in hazardous areas needs permits and Ex competence."
+      }
+    ]
+  },
+  "apply": {
+    "intro": "Do this on the training bench while your trainer watches. Your trainer signs it off. An app score alone never makes anyone competent or authorised.",
+    "items": [
+      { "id": "a1", "text": "Wires a 2-wire transmitter loop with correct polarity, screen earthed at one end, and labelled terminals." },
+      { "id": "a2", "text": "Sets the PLC scaling to the transmitter range, and explains raw counts." },
+      { "id": "a3", "text": "Carries out a 5-point loop check (0, 25, 50, 75, 100 %) with a loop calibrator, and records as-found and as-left results." },
+      { "id": "a4", "text": "Measures loop current or the voltage across the input, and checks the transmitter voltage is above its minimum." },
+      { "id": "a5", "text": "Finds a seeded loop fault (break, short, high resistance or wrong scaling) by measuring." },
+      { "id": "a6", "text": "Explains the process and permit precautions before working on a live instrument." }
+    ]
+  }
+}
