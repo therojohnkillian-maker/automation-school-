@@ -164,7 +164,7 @@ test('Template T4: run, test sheet, break it, model answer', async () => {
   await setup(p);
   await p.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Templates' }).click();
   await expect(p.locator('.lesson-list li')).toHaveCount(8);
-  await expect(p.locator('.lesson-list li', { hasText: 'T1 ·' })).toContainText('Arrives with M3');
+  await expect(p.locator('.lesson-list li', { hasText: 'T5 ·' })).toContainText('Arrives with M5');
   await p.locator('.lesson-list li', { hasText: 'T4 ·' }).getByRole('link', { name: 'Open' }).click();
   await expect(p.getByText(/syrup tank/)).toBeVisible();
   for (const tab of ['I/O list', 'Logic', 'Schedule']) {

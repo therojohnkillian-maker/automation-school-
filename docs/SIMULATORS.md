@@ -32,6 +32,14 @@ Learners and trainers should know where the simulators differ from real equipmen
 - Starting current = 6 × FLC for 1.2 s (VERIFY). Two-phase stall = 5 × FLC, losing a phase while running = 1.73 × FLC (VERIFY).
 - Overload: first-order thermal model (time constant 100 s), trips at about 1.2 × setting, about 3 s at 7.2 × setting (simplified Class 10, VERIFY). It cannot be reset until it has cooled.
 - No mechanical load curve. Acceleration is linear.
+- 6-terminal motors (M3): each winding is a load between its 1 and 2 ends. The engine compares the voltage across the windings with the nameplate winding voltage: about 1 = correct; about 0.58 = star on a delta-rated motor (starting current × 1/3, acceleration about 3 × slower, running current 1.3 × FLC, so a starter stuck in star trips the overload in about half a minute); about 1.73 = delta on a star-rated motor (running current 2.5 × FLC). These multipliers are teaching values, not a motor model (VERIFY).
+- An open winding can show voltage across it but carries no current. Two working windings stall the motor as single-phasing does.
+- Insulation: each line terminal has 500 MΩ to PE by default; an insulation fault lowers one winding. The meter's IR range (500 V) reads MΩ and shows ">999 MΩ" above its range; the Ω range shows OL above 40 MΩ.
+- Star-delta overload current: if a 6-terminal motor runs in delta through a delta contactor (no links in its terminal box), the overload feeding U1/V1/W1 is taken to carry winding current = line current ÷ √3. Otherwise it carries line current.
+- Contactors release 30 ms after their coil loses voltage (pick-up is instant). This is why two contactors that change over at the same instant overlap without an interlock (VERIFY: typical release times vary by size and make). A contactor that keeps dropping out and pulling back in more than 5 times a second is reported as relay chatter.
+- A push button press always lasts at least 150 ms of simulated time, as a real press does.
+- On-delay timer: contacts 15-16 (NC) and 17-18 (NO) change over when the set time has elapsed with the coil energised; they reset as soon as the coil is de-energised. No timing tolerance.
+- Soft starter: output follows the run signal (IN1-COM at 15 V or more). The motor fed from it starts at the current limit (× FLC) and reaches speed in the ramp time. If a supply phase is missing when the run signal comes on, it trips to FAULT until the run signal is removed. No soft stop, no bypass contactor model, no thyristor voltage waveforms.
 
 ## Multimeter and voltage indicator
 - The meter is true-RMS: V~ shows only AC, V= only DC, so the wrong mode reads about 0.

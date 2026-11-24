@@ -15,5 +15,14 @@
   "overload relay": "A device that measures motor current and trips if it stays too high for too long, protecting the motor from overheating.",
   "NO": "Normally open: a contact that is open at rest and closes when operated.",
   "NC": "Normally closed: a contact that is closed at rest and opens when operated.",
-  "holding contact": "An auxiliary NO contact of the contactor wired across the START button, keeping the coil energised after START is released. Also called a latch or retaining contact."
+  "holding contact": "An auxiliary NO contact of the contactor wired across the START button, keeping the coil energised after START is released. Also called a latch or retaining contact.",
+  "nameplate": "The plate on a motor giving its rated voltage(s) and connection, current, power, speed, power factor and frequency. Read it before connecting or setting protection.",
+  "star": "Star (Y) connection: one end of each winding is joined at a common star point. Each winding gets the line voltage ÷ √3 (230 V on a 400 V supply).",
+  "delta": "Delta (Δ) connection: the windings are joined end to end in a ring, and each winding sits across two lines, getting the full line voltage (400 V).",
+  "insulation resistance": "The resistance between conductors and earth (or between conductors), measured in megohms with an insulation tester at a high DC test voltage. Low values mean damaged or damp insulation.",
+  "interlock": "An arrangement that stops two things happening together, such as two contactors closing at once. Electrical interlocks use NC contacts; mechanical interlocks use a physical lever.",
+  "phase sequence": "The order in which the three phases reach their peaks (L1, L2, L3). It sets the direction of a three-phase motor; swapping any two phases reverses it.",
+  "on-delay timer": "A timing relay whose contacts change over a set time after its coil is energised, and change back as soon as the coil is de-energised.",
+  "soft starter": "A starter that uses thyristors to raise the motor voltage gradually, limiting starting current and torque. It does not change speed once started and is not an isolator.",
+  "thyristor": "A semiconductor switch for AC power. Once triggered it conducts until the current falls to zero, so a soft starter can control voltage by choosing when in each half-cycle to trigger it."
 }

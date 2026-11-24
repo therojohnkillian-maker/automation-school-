@@ -145,6 +145,10 @@ describe('templates', () => {
         if (t.id === 't4-tank') {
           expect(got).toMatchObject({ r0: 4, r1: 8, r2: 2, r3: 16, r4: 20, a1: true, a2: false, a3: true, a4: false });
         }
+        if (t.id === 't1-dol') expect(got).toMatchObject({ r1: true, r3: 1430, r4: 400, r5: true, r6: false });
+        if (t.id === 't2-fwd-rev') expect(got).toMatchObject({ r2: false, r3: true, r4: 1430, r5: true });
+        if (t.id === 't3-star-delta') expect(got).toMatchObject({ r2: 231, r3: false, r4: 400 });
+        for (const r of t.testSheet) if (r.field === 'amps') expect(got[r.id] as number, r.id).toBeGreaterThan(0);
       });
     });
   }

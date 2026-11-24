@@ -1,0 +1,346 @@
+{
+  "id": "t2-fwd-rev",
+  "number": 2,
+  "moduleId": "m3",
+  "version": "1.0.0",
+  "title": "Forward/reverse conveyor",
+  "summary": "Return conveyor CV-7: forward and reverse with electrical interlocks, one overload and a TRIP lamp.",
+  "circuit": "m3-fwd-rev",
+  "brief": "**Client:** Riverside bottling plant (fictional).\n**Equipment:** return conveyor **CV-7**, 2.2 kW motor, FLC 4.6 A.\n\nOperators need to run the conveyor backwards to clear jams.\n\n**Scope**\n- Reversing contactor pair **KM1** (forward) and **KM2** (reverse), electrically interlocked with NC auxiliaries and mechanically interlocked.\n- One overload **F2** after both contactors, TRIP lamp **H1**.\n- STOP must be pressed before changing direction.\n- No automatic restart.\n\n**Deliverables:** wired and tested starter, interlock proof recorded on the test sheet.",
+  "ioList": [
+    {
+      "tag": "S0",
+      "description": "STOP",
+      "type": "NC 11-12",
+      "range": "—",
+      "connection": "G1 + to S0:11, S0:12 to F2:95"
+    },
+    {
+      "tag": "S1",
+      "description": "FORWARD",
+      "type": "NO 13-14",
+      "range": "—",
+      "connection": "Parallel with KM1 13-14, then KM2 21-22 to KM1 A1"
+    },
+    {
+      "tag": "S2",
+      "description": "REVERSE",
+      "type": "NO 13-14",
+      "range": "—",
+      "connection": "Parallel with KM2 13-14, then KM1 21-22 to KM2 A1"
+    },
+    {
+      "tag": "KM1",
+      "description": "Forward contactor",
+      "type": "3 poles, 13-14 NO, 21-22 NC, 24 V DC coil",
+      "range": "AC-3, 2.2 kW",
+      "connection": "L1 L2 L3 straight through"
+    },
+    {
+      "tag": "KM2",
+      "description": "Reverse contactor",
+      "type": "3 poles, 13-14 NO, 21-22 NC, 24 V DC coil",
+      "range": "AC-3, 2.2 kW",
+      "connection": "L1 and L3 swapped at its input"
+    },
+    {
+      "tag": "F2",
+      "description": "Overload relay",
+      "type": "95-96 NC, 97-98 NO",
+      "range": "Set 4.6 A",
+      "connection": "After both contactors"
+    },
+    {
+      "tag": "H1",
+      "description": "TRIP lamp",
+      "type": "24 V DC",
+      "range": "—",
+      "connection": "Through F2 97-98"
+    }
+  ],
+  "logic": [
+    {
+      "function": "Forward",
+      "condition": "S1 pressed, KM2 out, no trip",
+      "action": "KM1 pulls in and holds"
+    },
+    {
+      "function": "Reverse",
+      "condition": "S2 pressed, KM1 out, no trip",
+      "action": "KM2 pulls in and holds"
+    },
+    {
+      "function": "Interlock",
+      "condition": "Either contactor in",
+      "action": "Its 21-22 opens: the other cannot pull in"
+    },
+    {
+      "function": "Stop",
+      "condition": "S0 pressed or F2 trips",
+      "action": "Both coils de-energised"
+    }
+  ],
+  "logicNote": "This design needs STOP before reversing. If the machine must reverse straight from running, add a delay so the motor stops first, and check the mechanics can take it.",
+  "schedule": [
+    {
+      "step": "Isolation, lock off and prove dead",
+      "who": "Technician",
+      "hours": 0.5
+    },
+    {
+      "step": "Mount contactor pair with mechanical interlock, F2, control gear",
+      "who": "Technician",
+      "hours": 1.5
+    },
+    {
+      "step": "Wire power circuit with phase swap on KM2",
+      "who": "Technician",
+      "hours": 1.5
+    },
+    {
+      "step": "Wire control circuit with both interlocks",
+      "who": "Technician",
+      "hours": 2
+    },
+    {
+      "step": "Dead tests and records",
+      "who": "Technician",
+      "hours": 1
+    },
+    {
+      "step": "Functional test: directions, interlocks, overload; machine guarded",
+      "who": "Technician + supervisor",
+      "hours": 1
+    }
+  ],
+  "testIntro": "Run the starter and record each result. Start each row from rest: press STOP first.",
+  "testSheet": [
+    {
+      "id": "r1",
+      "text": "Press FORWARD. Running current once up to speed",
+      "setup": [
+        {
+          "kind": "press",
+          "part": "S1"
+        },
+        {
+          "kind": "release",
+          "part": "S1"
+        }
+      ],
+      "wait": 3000,
+      "part": "M1",
+      "field": "amps",
+      "unit": "A"
+    },
+    {
+      "id": "r2",
+      "text": "While running forward, press and hold REVERSE. Is KM2 energised?",
+      "setup": [
+        {
+          "kind": "press",
+          "part": "S1"
+        },
+        {
+          "kind": "release",
+          "part": "S1"
+        },
+        {
+          "kind": "press",
+          "part": "S2"
+        }
+      ],
+      "part": "KM2",
+      "field": "energised",
+      "unit": ""
+    },
+    {
+      "id": "r3",
+      "text": "While running forward, is KM1 energised?",
+      "setup": [
+        {
+          "kind": "press",
+          "part": "S1"
+        },
+        {
+          "kind": "release",
+          "part": "S1"
+        }
+      ],
+      "part": "KM1",
+      "field": "energised",
+      "unit": ""
+    },
+    {
+      "id": "r4",
+      "text": "From rest, press REVERSE. Speed once up to speed",
+      "setup": [
+        {
+          "kind": "press",
+          "part": "S2"
+        },
+        {
+          "kind": "release",
+          "part": "S2"
+        }
+      ],
+      "wait": 3000,
+      "part": "M1",
+      "field": "rpm",
+      "unit": "rpm"
+    },
+    {
+      "id": "r5",
+      "text": "Running in reverse, press TEST on F2. Is H1 lit?",
+      "setup": [
+        {
+          "kind": "press",
+          "part": "S2"
+        },
+        {
+          "kind": "release",
+          "part": "S2"
+        },
+        {
+          "kind": "trip-test",
+          "part": "F2"
+        }
+      ],
+      "part": "H1",
+      "field": "lit",
+      "unit": ""
+    }
+  ],
+  "faults": [
+    {
+      "id": "t2-pole",
+      "kind": "wire-open",
+      "wire": "r5",
+      "report": "The wire from KM2 4 to F2 3 is broken: reverse runs on two phases."
+    },
+    {
+      "id": "t2-latch",
+      "kind": "contact-open",
+      "part": "KM2",
+      "a": "13",
+      "b": "14",
+      "report": "Reverse holding contact KM2 13-14 does not close."
+    },
+    {
+      "id": "t2-bridge",
+      "kind": "extra-wire",
+      "a": "S1:13",
+      "b": "S1:14",
+      "report": "A stray link bridges the FORWARD button: KM1 pulls in as soon as power is on."
+    },
+    {
+      "id": "t2-stop",
+      "kind": "contact-open",
+      "part": "S0",
+      "a": "11",
+      "b": "12",
+      "report": "STOP button contact 11-12 is open: nothing will start."
+    }
+  ],
+  "faultChecks": [
+    {
+      "do": {
+        "kind": "switch",
+        "part": "Q1",
+        "on": true
+      }
+    },
+    {
+      "wait": 100
+    },
+    {
+      "expect": {
+        "part": "KM1",
+        "energised": false
+      },
+      "fail": "KM1 is in before any button is pressed."
+    },
+    {
+      "do": {
+        "kind": "press",
+        "part": "S1"
+      }
+    },
+    {
+      "wait": 100
+    },
+    {
+      "do": {
+        "kind": "release",
+        "part": "S1"
+      }
+    },
+    {
+      "wait": 2000
+    },
+    {
+      "expect": {
+        "part": "M1",
+        "motor": "running",
+        "direction": "forward"
+      },
+      "fail": "Forward does not run."
+    },
+    {
+      "do": {
+        "kind": "press",
+        "part": "S0"
+      }
+    },
+    {
+      "wait": 100
+    },
+    {
+      "do": {
+        "kind": "release",
+        "part": "S0"
+      }
+    },
+    {
+      "wait": 3000
+    },
+    {
+      "do": {
+        "kind": "press",
+        "part": "S2"
+      }
+    },
+    {
+      "wait": 100
+    },
+    {
+      "do": {
+        "kind": "release",
+        "part": "S2"
+      }
+    },
+    {
+      "wait": 2000
+    },
+    {
+      "expect": {
+        "part": "KM2",
+        "energised": true
+      },
+      "fail": "Reverse does not latch."
+    },
+    {
+      "expect": {
+        "part": "M1",
+        "motor": "running",
+        "direction": "reverse"
+      },
+      "fail": "Reverse does not run."
+    }
+  ],
+  "extraReports": [
+    "Nothing is wrong: the starter works as specified."
+  ],
+  "modelAnswer": "**Test sheet:** forward current about **4.6 A**. Pressing REVERSE while running forward does **not** pull in KM2 (KM1 21-22 is open and has 24 V across it). Reverse speed **1430 rpm**. Overload TEST lights H1 and drops out KM2.\n\n**Interlock proof:** record that each direction blocks the other, and that the mechanical interlock is fitted.\n\n**Fault notes:** if a direction starts but does not hold, measure across that contactor's 13-14 while it is in. If nothing starts at all, work from G1 + along the common path: S0, then F2 95-96.",
+  "schematicIntro": "The working starter. Run forward and reverse (press STOP between), try REVERSE while running forward, and watch the event log."
+}

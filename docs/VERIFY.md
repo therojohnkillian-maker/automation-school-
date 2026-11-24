@@ -26,4 +26,11 @@ Items that must be checked before technicians train on the related content.
 | 20 | M2: raw count 32767 reported outside −4864…32511 (wire break / overflow) | Loop engine | Open |
 | 21 | M2: Ex i (intrinsic safety) precautions as worded | M2 L2 | Open |
 | 22 | T4: note that protective alarms are often fail-safe (de-energise on alarm) | Template T4 | Open |
-
+| 23 | M3: IR test voltage "typically 500 V DC for 400 V equipment" and minimum "widely used 1 MΩ" for LV motors (site procedure governs) | M3 L2 | Open |
+| 24 | M3: standard terminal box layout U1 V1 W1 over W2 U2 V2; delta links upright, star links across the bottom row | M3 L2 | Open |
+| 25 | M3: star start current and torque = 1/3 of DOL; star-delta needs a 400 V Δ motor on 400 V | M3 L4 | Open |
+| 26 | M3: overload in the winding circuit of a star-delta starter set to 0.58 × FLC | M3 L4, T3 | Open |
+| 27 | M3: contactor release time 30 ms used in the simulator; star/delta and forward/reverse usually also mechanically interlocked | Engine, M3 L3/L4 | Open |
+| 28 | M3: soft starter current limit example 3 × FLC, ramp 8 s; torque ∝ voltage²; thyristors are not an isolator | M3 L5 | Open |
+| 29 | M3: motor model multipliers for wrong connections (0.58 → 1.3 × FLC running; 1.73 → 2.5 × FLC) | Engine | Open |
+| 30 | M3 L4 timer 4 s: suitable as a teaching value; real settings come from commissioning | M3 L4, T3 | Open |

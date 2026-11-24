@@ -1,7 +1,7 @@
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { CircuitCanvas } from '../../components/CircuitCanvas';
 import { Meter, emptyProbes, placeProbe, type ProbeState } from '../../components/Meter';
-import { Markup } from '../../components/Markup';
+import { Markup, Inline } from '../../components/Markup';
 import { Modal, Notice, StatusChip } from '../../components/ui';
 import { circuit as circuitById } from '../../content';
 import type { Lesson } from '../../content/types';
@@ -90,7 +90,7 @@ export function ShowCircuitStep({ lesson, done }: StepProps) {
           <ol className="tasks">
             {show.tasks.map((t, i) => (
               <li key={t.id} className={i < doneIdx ? 'done' : i === doneIdx ? 'current' : ''}>
-                <StatusChip status={i < doneIdx ? 'passed' : i === doneIdx ? 'progress' : 'open'} label={i < doneIdx ? 'Done' : i === doneIdx ? 'Now' : 'Next'} /> {t.text}
+                <StatusChip status={i < doneIdx ? 'passed' : i === doneIdx ? 'progress' : 'open'} label={i < doneIdx ? 'Done' : i === doneIdx ? 'Now' : 'Next'} /> <Inline text={t.text} />
               </li>
             ))}
           </ol>
@@ -138,7 +138,7 @@ export function BuildCircuitStep({ lesson, progress, done, record }: StepProps) 
     if (tool === 'meter') {
       const next = placeProbe(probes, ref);
       setProbes(next);
-      if (next.red && next.black && measure(sim.circuit, next.red, next.black, next.mode).unsafe) setWarn('Safety: you tried a resistance (Ω) test on a live circuit. On the real bench, switch off and prove dead first.');
+      if (next.red && next.black && measure(sim.circuit, next.red, next.black, next.mode).unsafe) setWarn(`Safety: you tried ${next.mode === 'IR' ? 'a 500 V insulation' : 'a resistance (Ω)'} test on a live circuit. On the real bench, switch off and prove dead first.`);
       return;
     }
     if (!sel) return setSel(ref);
@@ -271,7 +271,7 @@ export function BreakCircuitStep({ lesson, done, record, recordSession, lastFaul
     const passed = correct && !unsafe;
     const score = passed ? breakScore(measurements.current.length, br.parMeasurements, seconds, br.parSeconds) : 0;
     const attempt = await record({ kind: 'break', lessonId: lesson.id, faultId: fault.id, passed, score, critical: unsafe, measurements: measurements.current.length, seconds, chosen });
-    await recordSession({ attemptId: attempt.id, lessonId: lesson.id, faultId: fault.id, seed, measurements: measurements.current, safetyEvents: unsafe ? ['Resistance test on a live circuit'] : [], result: passed ? 'found' : 'not-found', log: sim.circuit.log.slice(-40) });
+    await recordSession({ attemptId: attempt.id, lessonId: lesson.id, faultId: fault.id, seed, measurements: measurements.current, safetyEvents: unsafe ? ['Resistance or insulation test on a live circuit'] : [], result: passed ? 'found' : 'not-found', log: sim.circuit.log.slice(-40) });
     setOutcome({ passed, score, chosen });
     if (passed) await done((s) => ({ ...s, break: { passed: true, bestScore: Math.max(score, s.break?.bestScore ?? 0) } }), false);
   };
@@ -293,7 +293,7 @@ export function BreakCircuitStep({ lesson, done, record, recordSession, lastFaul
         ) : (
           <Notice kind="error">
             <p><strong>{unsafe ? 'Failed: critical safety error.' : 'Not the fault.'}</strong></p>
-            {unsafe && <p>You made a resistance test on a live circuit. On a real panel this can destroy the meter and cause an arc flash. Always isolate and prove dead before an Ω test.</p>}
+            {unsafe && <p>You made a resistance or insulation test on a live circuit. On a real panel this can destroy the meter and cause an arc flash. Always isolate and prove dead before an Ω or IR test.</p>}
             <p>You chose: {outcome.chosen}</p>
             <p>The fault was: {fault.report}</p>
           </Notice>
@@ -309,7 +309,7 @@ export function BreakCircuitStep({ lesson, done, record, recordSession, lastFaul
   return (
     <div>
       <Markup text={br.intro} />
-      {unsafe && <Notice kind="error">Critical safety error: resistance test on a live circuit. This attempt will fail. Switch off Q1 before any Ω test.</Notice>}
+      {unsafe && <Notice kind="error">Critical safety error: resistance or insulation test on a live circuit. This attempt will fail. Isolate before any Ω or IR test.</Notice>}
       <div className="lab">
         <div className="lab-main">
           {has3d && <ViewSwitch view={view} setView={setView} />}

@@ -136,7 +136,7 @@ export function LessonPage() {
         })}
       </nav>
       <h2 className="step-title">{STEPS.find((s) => s.id === current)!.label}</h2>
-      <div key={current}>{body}</div>
+      <div key={`${lesson.id}-${current}`}>{body}</div>
     </main>
   );
 }

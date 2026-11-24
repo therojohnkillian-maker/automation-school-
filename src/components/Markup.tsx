@@ -33,7 +33,7 @@ export function Markup({ text }: { text: string }) {
   );
 }
 
-function Inline({ text }: { text: string }) {
+export function Inline({ text }: { text: string }) {
   const out: ReactNode[] = [];
   const re = /(\*\*[^*]+\*\*|\[\[[^\]]+\]\])/g;
   let last = 0;

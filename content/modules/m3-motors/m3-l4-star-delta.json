@@ -1,0 +1,532 @@
+{
+  "id": "m3-l4",
+  "moduleId": "m3",
+  "version": "1.0.0",
+  "title": "Star-delta starter",
+  "minutes": 75,
+  "summary": "Start a motor in star to cut the starting current to a third, then change to delta on a timer, with interlocks so star and delta never close together.",
+  "requires": [
+    "m3-l2",
+    "m3-l3"
+  ],
+  "why": {
+    "text": "Extract fan **EF-2** at the fictional Riverside plant has a 5.5 kW motor. Started direct-on-line it would pull around six times its full-load current, dip the supply and upset other equipment on the same board.\n\nA star-delta starter starts the motor in [[star]] at about a third of the DOL current, then switches to [[delta]] for full power once it is up to speed."
+  },
+  "learn": {
+    "cards": [
+      {
+        "title": "The idea",
+        "text": "Use a **400 V Δ / 690 V Y** motor on a 400 V supply. Its normal running connection is delta.\n\n- **Start in star**: each winding gets 230 V instead of 400 V. Starting current and starting torque both fall to **one third** of DOL.\n- **Run in delta**: after a few seconds, when the motor is near full speed, change to delta for full torque.\n\nBecause torque is only a third in star, star-delta suits loads that start light: fans, centrifugal pumps, unloaded compressors."
+      },
+      {
+        "title": "Three contactors",
+        "text": "- **KM1 main** feeds L1, L2, L3 to U1, V1, W1 through the overload.\n- **KM2 star** joins W2, U2 and V2 together (the star point).\n- **KM3 delta** connects W2 to L1, U2 to L2 and V2 to L3.\n\nStart: KM1 + KM2. Run: KM1 + KM3. The motor needs six cables from the starter, not three.",
+        "circuit": "m3-star-delta"
+      },
+      {
+        "title": "Star and delta must never overlap",
+        "text": "KM2 joins W2, U2, V2. KM3 puts three different phases on those same terminals. Both in together joins all three phases: a short circuit.\n\nSo each coil goes through the other one's NC contact: **KM3 21-22** feeds KM2, **KM2 21-22** feeds KM3. Star-delta contactor sets usually have a mechanical interlock between KM2 and KM3 as well."
+      },
+      {
+        "title": "The timer",
+        "text": "An [[on-delay timer]] **KT** starts timing when START is pressed:\n- **15-16** (delayed opening, NC) feeds KM2 star. It opens when the time is up.\n- **17-18** (delayed closing, NO) feeds KM3 delta. It closes when the time is up.\n\nKM2 drops out first; only then can KM3 pull in through KM2 21-22. Set the time so the motor is close to full speed at changeover. Too short and you get a large current surge at changeover; too long and the motor works in star with too little torque."
+      },
+      {
+        "title": "Setting the overload",
+        "text": "Here F2 is between KM1 and U1, V1, W1, so it carries the **winding** current, not the line current. In delta, winding current = line current ÷ √3.\n\nSo set it to **0.58 × FLC**. For this 10.7 A motor: 10.7 × 0.58 ≈ **6.2 A**. Setting it to 10.7 A would leave the motor unprotected.\n\nIf an overload is fitted in the supply line instead, set it to full FLC. Always check where it is on the drawing."
+      },
+      {
+        "title": "Six cables, six terminals to prove dead",
+        "text": "A star-delta motor has two sets of cables. When you isolate, prove dead at **all six** motor terminals (and earth), not just U1, V1, W1.\n\nInsulation test both sets of cables and the motor, with the starter isolated and the links (if any) removed."
+      }
+    ]
+  },
+  "show": {
+    "kind": "circuit",
+    "circuit": "m3-star-delta",
+    "intro": "This star-delta starter is wired correctly. Watch the current fall in star, and the order KM2 out, then KM3 in.",
+    "tasks": [
+      {
+        "id": "t1",
+        "text": "Press **START (S1)**. KM1 and KM2 pull in: the motor starts in star. Note the current: about 2 × FLC, not 6 ×.",
+        "when": [
+          {
+            "part": "KM2",
+            "energised": true
+          },
+          {
+            "part": "KM1",
+            "energised": true
+          }
+        ]
+      },
+      {
+        "id": "t2",
+        "text": "While it is in star, measure across one winding, **U1 to U2**, in V~. About 230 V.",
+        "when": [
+          {
+            "part": "KM2",
+            "energised": true
+          }
+        ],
+        "measure": {
+          "a": "M1:U1",
+          "b": "M1:U2",
+          "mode": "VAC"
+        }
+      },
+      {
+        "id": "t3",
+        "text": "Wait for the timer. KM2 drops out, then KM3 pulls in: the motor runs in delta.",
+        "when": [
+          {
+            "part": "KM3",
+            "energised": true
+          },
+          {
+            "part": "KM2",
+            "energised": false
+          }
+        ]
+      },
+      {
+        "id": "t4",
+        "text": "Measure **U1 to U2** again. In delta each winding now has the full 400 V.",
+        "when": [
+          {
+            "part": "KM3",
+            "energised": true
+          }
+        ],
+        "measure": {
+          "a": "M1:U1",
+          "b": "M1:U2",
+          "mode": "VAC"
+        }
+      },
+      {
+        "id": "t5",
+        "text": "Look at F2: in delta it carries the winding current (about 6.2 A), not the 10.7 A line current, so it does not heat up. Press **STOP (S0)**.",
+        "when": [
+          {
+            "part": "KM1",
+            "energised": false
+          },
+          {
+            "part": "KM3",
+            "energised": false
+          }
+        ]
+      }
+    ]
+  },
+  "build": {
+    "kind": "circuit",
+    "circuit": "m3-star-delta",
+    "checks": [
+      {
+        "watchNotBoth": [
+          "KM2",
+          "KM3"
+        ],
+        "fail": "KM2 (star) and KM3 (delta) were energised at the same time. That short-circuits the supply through the motor terminals. Put KM3 21-22 in the KM2 coil circuit, and KM2 21-22 in the KM3 coil circuit."
+      },
+      {
+        "do": {
+          "kind": "switch",
+          "part": "Q1",
+          "on": true
+        }
+      },
+      {
+        "wait": 100
+      },
+      {
+        "expect": {
+          "noShorts": true
+        },
+        "fail": "A protective device tripped as soon as power was applied. Look for a wire joining two phases, or + to 0 V."
+      },
+      {
+        "expect": {
+          "stable": true
+        },
+        "fail": "The circuit will not settle (relay chatter)."
+      },
+      {
+        "expect": {
+          "part": "KM1",
+          "energised": false
+        },
+        "fail": "KM1 pulls in without anyone pressing START."
+      },
+      {
+        "do": {
+          "kind": "press",
+          "part": "S1"
+        }
+      },
+      {
+        "wait": 100
+      },
+      {
+        "do": {
+          "kind": "release",
+          "part": "S1"
+        }
+      },
+      {
+        "wait": 200
+      },
+      {
+        "expect": {
+          "part": "KM1",
+          "energised": true
+        },
+        "fail": "START does not pull in and hold the main contactor KM1. Trace G1 + through S0, F2 95-96, S1 (with KM1 13-14 in parallel) to KM1 A1, then A2 to 0 V."
+      },
+      {
+        "expect": {
+          "part": "KM2",
+          "energised": true
+        },
+        "fail": "The star contactor KM2 does not pull in at start. It is fed through KT 15-16 (closed while timing) and KM3 21-22."
+      },
+      {
+        "expect": {
+          "part": "KM3",
+          "energised": false
+        },
+        "fail": "The delta contactor KM3 is in at the start. It must wait for the timer (KT 17-18)."
+      },
+      {
+        "expect": {
+          "part": "M1",
+          "connection": "low"
+        },
+        "fail": "At start the motor is not in star. KM2 must join W2, U2 and V2 so each winding gets 230 V."
+      },
+      {
+        "wait": 4500
+      },
+      {
+        "expect": {
+          "part": "KT",
+          "timerDone": true
+        },
+        "fail": "The timer KT has not run out. Its coil must be fed from the START circuit, after S1 and the holding contact."
+      },
+      {
+        "expect": {
+          "part": "KM2",
+          "energised": false
+        },
+        "fail": "KM2 (star) did not drop out when the timer ran out. Feed it through the delayed-opening contact KT 15-16."
+      },
+      {
+        "expect": {
+          "part": "KM3",
+          "energised": true
+        },
+        "fail": "KM3 (delta) did not pull in after the timer. Feed it through KT 17-18 and KM2 21-22."
+      },
+      {
+        "expect": {
+          "part": "M1",
+          "connection": "correct"
+        },
+        "fail": "After changeover the windings are not in delta. KM3 must connect W2 to L1, U2 to L2 and V2 to L3."
+      },
+      {
+        "expect": {
+          "part": "M1",
+          "motor": "running",
+          "direction": "forward"
+        },
+        "fail": "After changeover the motor is not running forward."
+      },
+      {
+        "expect": {
+          "noShorts": true
+        },
+        "fail": "A protective device tripped at changeover. Check the delta wiring: W2 to L1, U2 to L2, V2 to L3."
+      },
+      {
+        "wait": 30000
+      },
+      {
+        "expect": {
+          "part": "F2",
+          "tripped": false
+        },
+        "fail": "F2 tripped in normal running. It sits in the winding circuit, so it carries FLC ÷ √3: set it to 0.58 × FLC."
+      },
+      {
+        "do": {
+          "kind": "press",
+          "part": "S0"
+        }
+      },
+      {
+        "wait": 100
+      },
+      {
+        "do": {
+          "kind": "release",
+          "part": "S0"
+        }
+      },
+      {
+        "wait": 100
+      },
+      {
+        "expect": {
+          "part": "KM1",
+          "energised": false
+        },
+        "fail": "STOP does not drop out KM1."
+      },
+      {
+        "expect": {
+          "part": "KM3",
+          "energised": false
+        },
+        "fail": "STOP does not drop out KM3."
+      }
+    ],
+    "guided": {
+      "intro": "The power circuit, START/STOP and the holding contact are wired. **Wire the coils, the timer and the interlocks.**",
+      "removeWires": [
+        "c10",
+        "c11",
+        "c12",
+        "c13",
+        "c14",
+        "c15",
+        "c16",
+        "c17",
+        "c18",
+        "c19",
+        "c20",
+        "c21"
+      ],
+      "hints": [
+        "Everything starts from S1:14 (after START and the holding contact): wire it to KM1:A1, KT:A1, KT:15 and KT:17.",
+        "Star path: KT:16 to KM3:21 (delta's NC interlock), then KM3:22 to KM2:A1.",
+        "Delta path: KT:18 to KM2:21 (star's NC interlock), then KM2:22 to KM3:A1.",
+        "All four A2 terminals (KM1, KT, KM2, KM3) return to G1 − (0 V)."
+      ]
+    },
+    "unguided": {
+      "intro": "Now wire the **delta and star contactor power circuits** (including the star point) and **all the coils, timer and interlocks**, with no hints.",
+      "removeWires": [
+        "d1",
+        "d2",
+        "d3",
+        "d4",
+        "d5",
+        "d6",
+        "y1",
+        "y2",
+        "y3",
+        "y4",
+        "y5",
+        "c10",
+        "c11",
+        "c12",
+        "c13",
+        "c14",
+        "c15",
+        "c16",
+        "c17",
+        "c18",
+        "c19",
+        "c20",
+        "c21"
+      ]
+    }
+  },
+  "break": {
+    "kind": "circuit",
+    "circuit": "m3-star-delta",
+    "intro": "This star-delta starter has **one hidden fault**. Start it, watch the sequence and the event log, then find the cause by measuring. Some faults take a while to show: watch the overload heat. In this simulator you may measure voltage with the power on. On a real panel, live testing is only allowed when it is justified, by a competent person, following the site risk assessment and GS38. Switch off Q1 before any Ω test.",
+    "faults": [
+      {
+        "id": "sd-stuck",
+        "kind": "contact-closed",
+        "part": "KT",
+        "a": "15",
+        "b": "16",
+        "report": "Timer contact KT 15-16 is stuck closed: the motor never leaves star, and the overload eventually trips."
+      },
+      {
+        "id": "sd-1718",
+        "kind": "contact-open",
+        "part": "KT",
+        "a": "17",
+        "b": "18",
+        "report": "Timer contact KT 17-18 never closes: star drops out but delta never comes in."
+      },
+      {
+        "id": "sd-il",
+        "kind": "contact-open",
+        "part": "KM2",
+        "a": "21",
+        "b": "22",
+        "report": "The star contactor's interlock contact KM2 21-22 is open: delta cannot pull in."
+      },
+      {
+        "id": "sd-delta",
+        "kind": "wire-moved",
+        "wire": "d5",
+        "end": "b",
+        "to": "M1:V2",
+        "report": "Delta wiring error: KM3 terminal 4 goes to V2 instead of U2."
+      },
+      {
+        "id": "sd-coil",
+        "kind": "coil-open",
+        "part": "KM2",
+        "report": "The KM2 (star) coil is open circuit."
+      }
+    ],
+    "parMeasurements": 7,
+    "parSeconds": 480,
+    "extraReports": [
+      "Nothing is wrong with the starter."
+    ]
+  },
+  "prove": {
+    "passMark": 0.8,
+    "questions": [
+      {
+        "id": "q1",
+        "text": "Compared with DOL, the starting current in star is about…",
+        "options": [
+          "One third",
+          "Half",
+          "The same",
+          "Twice"
+        ],
+        "answer": 0,
+        "explain": "Each winding gets 1/√3 of the voltage and the line current is 1/√3 of the delta line current again: 1/3 overall."
+      },
+      {
+        "id": "q2",
+        "text": "Compared with DOL, the starting torque in star is about…",
+        "options": [
+          "One third, so the load must start light",
+          "The same",
+          "Three times higher",
+          "Zero"
+        ],
+        "answer": 0,
+        "explain": "Torque falls with current. Star-delta suits fans and pumps, not loads that start heavy."
+      },
+      {
+        "id": "q3",
+        "text": "The supply is 400 V. Which motor is suitable for star-delta starting?",
+        "options": [
+          "400 V Δ / 690 V Y",
+          "230 V Δ / 400 V Y",
+          "Any motor with six terminals",
+          "A single-phase motor"
+        ],
+        "answer": 0,
+        "explain": "In delta a 230 V Δ / 400 V Y motor would get 400 V per winding and burn out. Star-delta needs windings rated 400 V in delta.",
+        "critical": true
+      },
+      {
+        "id": "q4",
+        "text": "Why must KM2 (star) and KM3 (delta) never be closed together?",
+        "options": [
+          "It joins all three phases through the motor terminals: a short circuit",
+          "The motor would stop",
+          "The timer would reset",
+          "It doubles the speed"
+        ],
+        "answer": 0,
+        "explain": "KM2 joins W2, U2, V2; KM3 puts L1, L2, L3 on them. Both together is a three-phase short. Interlocks prevent it.",
+        "critical": true
+      },
+      {
+        "id": "q5",
+        "text": "F2 is wired between KM1 and U1, V1, W1. The motor FLC is 10.7 A. What should F2 be set to?",
+        "options": [
+          "About 6.2 A (0.58 × FLC)",
+          "10.7 A",
+          "18.5 A (1.73 × FLC)",
+          "32 A"
+        ],
+        "answer": 0,
+        "explain": "There it carries winding current, which in delta is line current ÷ √3."
+      },
+      {
+        "id": "q6",
+        "text": "The timer is set far too short. What happens?",
+        "options": [
+          "Changeover happens at low speed with a large current surge",
+          "The motor never starts",
+          "Nothing changes",
+          "The motor runs backwards"
+        ],
+        "answer": 0,
+        "explain": "In delta at low speed the motor draws nearly DOL current, so the benefit of star starting is lost."
+      },
+      {
+        "id": "q7",
+        "text": "The starter never leaves star. What happens if the fan runs like this?",
+        "options": [
+          "It runs weak and draws too much current under load until the overload trips",
+          "It runs normally",
+          "It speeds up",
+          "The supply voltage rises"
+        ],
+        "answer": 0,
+        "explain": "In star the motor has only about a third of its torque. Under load the current rises above the winding rating."
+      },
+      {
+        "id": "q8",
+        "text": "You need to work on the motor of a star-delta drive. Where do you prove dead?",
+        "options": [
+          "At all six motor terminals and to earth, after isolating and locking off",
+          "At U1, V1, W1 only",
+          "At the push buttons",
+          "At the 24 V supply"
+        ],
+        "answer": 0,
+        "explain": "A star-delta motor has two sets of cables; either set could be live from a separate contactor.",
+        "critical": true
+      }
+    ]
+  },
+  "apply": {
+    "intro": "Do this on the training bench while your trainer watches. Your trainer signs it off. An app score alone never makes anyone competent or authorised.",
+    "items": [
+      {
+        "id": "a1",
+        "text": "Carries out safe isolation and proves dead at all six motor terminals."
+      },
+      {
+        "id": "a2",
+        "text": "Checks the nameplate is 400 V Δ and removes any links from the terminal box."
+      },
+      {
+        "id": "a3",
+        "text": "Wires the main, star and delta contactors, the star point, the timer and both electrical interlocks to the drawing; fits the mechanical interlock where supplied."
+      },
+      {
+        "id": "a4",
+        "text": "Sets the overload to 0.58 × FLC (when fitted in the winding circuit) and explains why."
+      },
+      {
+        "id": "a5",
+        "text": "Carries out continuity and insulation resistance tests on both sets of motor cables and records them."
+      },
+      {
+        "id": "a6",
+        "text": "Functional test with the trainer: star start, timed changeover, no overlap of star and delta, STOP, overload trip, no automatic restart."
+      }
+    ]
+  }
+}

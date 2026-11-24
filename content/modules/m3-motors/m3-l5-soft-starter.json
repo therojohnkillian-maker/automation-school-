@@ -1,0 +1,417 @@
+{
+  "id": "m3-l5",
+  "moduleId": "m3",
+  "version": "1.0.0",
+  "title": "Soft starter",
+  "minutes": 50,
+  "summary": "Ramp a motor up smoothly with a current limit, wire the run signal, and understand why a soft starter is never an isolator.",
+  "requires": [
+    "m3-l1"
+  ],
+  "why": {
+    "text": "Mixer **MX-1** at the fictional Riverside plant has an 11 kW motor and a belt drive. Started DOL, the belts squeal and slip, and the supply dips. Star-delta would still give a current surge at changeover.\n\nA [[soft starter]] raises the motor voltage gradually, so the current stays under a set limit and the belts take up smoothly."
+  },
+  "learn": {
+    "cards": [
+      {
+        "title": "How a soft starter works",
+        "text": "Inside are pairs of [[thyristor]]s in each phase. They switch on part-way through each half-cycle of the mains, so the motor sees a reduced voltage. Over the **ramp time** the starter switches them on earlier and earlier until the motor gets full voltage.\n\nMost soft starters then close an internal **bypass** contactor so the thyristors do not run hot."
+      },
+      {
+        "title": "Current limit and torque",
+        "text": "Two main settings:\n- **Current limit**, as a multiple of FLC (for example 3 × FLC). The starter holds the current at or below this.\n- **Ramp time** (for example 8 s).\n\nTorque falls with the **square** of voltage: half voltage gives a quarter of the torque. Set the limit too low and a heavy load will not accelerate."
+      },
+      {
+        "title": "The circuit",
+        "text": "Here: **Q1** MPCB → **KM1** line contactor → **SS1** soft starter → **F2** overload → **M1**.\n\nThe soft starter gets its **run signal** at IN1-COM from KM1 auxiliary 43-44. So START pulls in KM1, which connects the supply and then tells the soft starter to ramp up. STOP drops KM1 and removes both.",
+        "circuit": "m3-soft-starter"
+      },
+      {
+        "title": "Phase loss protection",
+        "text": "A soft starter checks its supply. If a phase is missing when it is told to run, it trips with a **FAULT** and will not start. Find the cause (a blown fuse, an open contactor pole, a loose wire), then reset it.\n\nThis protects the motor from single-phasing."
+      },
+      {
+        "title": "Not an isolator",
+        "text": "Thyristors are semiconductors. When the soft starter is stopped they are \"off\", but they are **not** an isolating gap, and a failed thyristor can pass full voltage.\n\nThe motor terminals can be live with the soft starter stopped. Before work on the motor or cable: isolate at **Q1**, lock off and **prove dead**. Also disconnect the soft starter before an insulation test of the motor circuit."
+      },
+      {
+        "title": "Soft starter or drive?",
+        "text": "A soft starter only controls **starting** (and often stopping). Once up to speed the motor runs at full speed on the mains.\n\nIf the process needs **variable speed**, you need a variable frequency drive (VFD), which is Module 4."
+      }
+    ]
+  },
+  "show": {
+    "kind": "circuit",
+    "circuit": "m3-soft-starter",
+    "intro": "This soft starter is wired correctly. Watch the motor current stay under the limit during the ramp.",
+    "tasks": [
+      {
+        "id": "t1",
+        "text": "Press **START (S1)**. KM1 pulls in and the soft starter starts ramping. The current stays at or below 3 × FLC (about 62 A).",
+        "when": [
+          {
+            "part": "M1",
+            "motor": "starting"
+          },
+          {
+            "part": "KM1",
+            "energised": true
+          }
+        ]
+      },
+      {
+        "id": "t2",
+        "text": "Measure the run signal **SS1 IN1 to COM** in V=. It reads 24 V through KM1 43-44.",
+        "measure": {
+          "a": "SS1:IN1",
+          "b": "SS1:COM",
+          "mode": "VDC"
+        }
+      },
+      {
+        "id": "t3",
+        "text": "Wait for the ramp to finish. The motor reaches full speed and the current falls to FLC.",
+        "when": [
+          {
+            "part": "M1",
+            "motor": "running"
+          }
+        ]
+      },
+      {
+        "id": "t4",
+        "text": "Press **STOP (S0)**. KM1 drops out and the motor coasts to a stop.",
+        "when": [
+          {
+            "part": "KM1",
+            "energised": false
+          }
+        ]
+      }
+    ]
+  },
+  "build": {
+    "kind": "circuit",
+    "circuit": "m3-soft-starter",
+    "checks": [
+      {
+        "do": {
+          "kind": "switch",
+          "part": "Q1",
+          "on": true
+        }
+      },
+      {
+        "wait": 100
+      },
+      {
+        "expect": {
+          "noShorts": true
+        },
+        "fail": "A protective device tripped as soon as power was applied."
+      },
+      {
+        "expect": {
+          "part": "G1",
+          "psuOn": true
+        },
+        "fail": "The 24 V supply G1 is off."
+      },
+      {
+        "expect": {
+          "part": "KM1",
+          "energised": false
+        },
+        "fail": "KM1 pulls in without anyone pressing START."
+      },
+      {
+        "expect": {
+          "part": "M1",
+          "motor": "not-powered"
+        },
+        "fail": "The motor runs before START is pressed."
+      },
+      {
+        "do": {
+          "kind": "press",
+          "part": "S1"
+        }
+      },
+      {
+        "wait": 100
+      },
+      {
+        "do": {
+          "kind": "release",
+          "part": "S1"
+        }
+      },
+      {
+        "wait": 1000
+      },
+      {
+        "expect": {
+          "part": "KM1",
+          "energised": true
+        },
+        "fail": "START does not pull in and hold KM1. Trace G1 + through S0, F2 95-96, S1 (with KM1 13-14 in parallel) to KM1 A1, then A2 to 0 V."
+      },
+      {
+        "expect": {
+          "part": "M1",
+          "motor": "starting"
+        },
+        "fail": "One second after START the motor is not ramping up. The soft starter needs all three phases from KM1 and a 24 V run signal on IN1-COM (through KM1 43-44)."
+      },
+      {
+        "expect": {
+          "part": "M1",
+          "ampsBelow": 63
+        },
+        "fail": "Starting current is above the soft starter's limit of 3 × FLC. The motor may be bypassing the soft starter."
+      },
+      {
+        "wait": 8000
+      },
+      {
+        "expect": {
+          "part": "M1",
+          "motor": "running",
+          "direction": "forward"
+        },
+        "fail": "The motor did not reach full speed at the end of the ramp. Check all three output phases 2T1, 4T2, 6T3 through F2 to the motor."
+      },
+      {
+        "do": {
+          "kind": "press",
+          "part": "S0"
+        }
+      },
+      {
+        "wait": 100
+      },
+      {
+        "do": {
+          "kind": "release",
+          "part": "S0"
+        }
+      },
+      {
+        "wait": 100
+      },
+      {
+        "expect": {
+          "part": "KM1",
+          "energised": false
+        },
+        "fail": "STOP does not drop out KM1."
+      },
+      {
+        "expect": {
+          "part": "M1",
+          "motor": "stopped-or-coasting"
+        },
+        "fail": "After STOP the motor still has power."
+      }
+    ],
+    "guided": {
+      "intro": "The power circuit and the 24 V supply are wired. **Wire the control circuit**: holding contact, KM1 coil, and the soft starter run signal.",
+      "removeWires": [
+        "c8",
+        "c9",
+        "c10",
+        "c11",
+        "c12",
+        "c13",
+        "c14"
+      ],
+      "hints": [
+        "Holding contact in parallel with START: S1:13 to KM1:13, S1:14 to KM1:14.",
+        "S1:14 feeds the KM1 coil (A1); KM1:A2 returns to G1 −.",
+        "Run signal: G1 + to KM1:43, KM1:44 to SS1:IN1, and SS1:COM back to G1 −."
+      ]
+    },
+    "unguided": {
+      "intro": "Now wire the **soft starter power connections** (in from KM1, out to F2) and the **control circuit**, with no hints.",
+      "removeWires": [
+        "p7",
+        "p8",
+        "p9",
+        "p10",
+        "p11",
+        "p12",
+        "c8",
+        "c9",
+        "c10",
+        "c11",
+        "c12",
+        "c13",
+        "c14"
+      ]
+    }
+  },
+  "break": {
+    "kind": "circuit",
+    "circuit": "m3-soft-starter",
+    "intro": "This soft starter circuit has **one hidden fault**. Start it, read the soft starter display and the event log, then find the cause by measuring. In this simulator you may measure voltage with the power on. On a real panel, live testing is only allowed when it is justified, by a competent person, following the site risk assessment and GS38. Switch off Q1 before any Ω test.",
+    "faults": [
+      {
+        "id": "ss-phase",
+        "kind": "contact-open",
+        "part": "KM1",
+        "a": "5",
+        "b": "6",
+        "report": "KM1 pole 5-6 is open: the soft starter sees a phase missing and trips."
+      },
+      {
+        "id": "ss-run",
+        "kind": "contact-open",
+        "part": "KM1",
+        "a": "43",
+        "b": "44",
+        "report": "KM1 auxiliary contact 43-44 does not close: the soft starter never gets its run signal."
+      },
+      {
+        "id": "ss-com",
+        "kind": "wire-open",
+        "wire": "c14",
+        "report": "The wire from SS1 COM to G1 0 V is broken."
+      },
+      {
+        "id": "ss-ol",
+        "kind": "contact-open",
+        "part": "F2",
+        "a": "95",
+        "b": "96",
+        "report": "Overload contact F2 95-96 is open, although the overload has not tripped."
+      },
+      {
+        "id": "ss-out",
+        "kind": "wire-open",
+        "wire": "p11",
+        "report": "The wire from SS1 4T2 to F2 terminal 3 is broken: the motor gets two phases."
+      }
+    ],
+    "parMeasurements": 6,
+    "parSeconds": 360,
+    "extraReports": [
+      "Nothing is wrong with the circuit."
+    ]
+  },
+  "prove": {
+    "passMark": 0.8,
+    "questions": [
+      {
+        "id": "q1",
+        "text": "How does a soft starter reduce the starting current?",
+        "options": [
+          "It lowers the motor voltage during the start, then ramps it up",
+          "It changes the supply frequency",
+          "It connects the motor in star",
+          "It adds resistance in the earth wire"
+        ],
+        "answer": 0,
+        "explain": "Thyristors switch on part-way through each half-cycle, giving a reduced voltage that rises over the ramp time."
+      },
+      {
+        "id": "q2",
+        "text": "The soft starter halves the motor voltage. What happens to the motor torque?",
+        "options": [
+          "It falls to about a quarter",
+          "It halves",
+          "It stays the same",
+          "It doubles"
+        ],
+        "answer": 0,
+        "explain": "Torque is roughly proportional to voltage squared."
+      },
+      {
+        "id": "q3",
+        "text": "The soft starter is stopped (no run signal). Is it safe to work on the motor terminals?",
+        "options": [
+          "No. Isolate at Q1, lock off and prove dead: thyristors are not an isolator",
+          "Yes, the output is off",
+          "Yes, if the display says OFF",
+          "Yes, after 10 seconds"
+        ],
+        "answer": 0,
+        "explain": "A stopped or failed soft starter can still have voltage on its output. Only a locked-off isolator and a dead test make it safe.",
+        "critical": true
+      },
+      {
+        "id": "q4",
+        "text": "The soft starter shows a phase-loss FAULT. What do you do?",
+        "options": [
+          "Find and fix the missing phase (fuse, contactor pole, loose wire), then reset",
+          "Keep pressing START until it runs",
+          "Increase the current limit",
+          "Swap two motor phases"
+        ],
+        "answer": 0,
+        "explain": "The trip protects the motor from single-phasing. Resetting without finding the cause will just trip again."
+      },
+      {
+        "id": "q5",
+        "text": "The process needs the mixer to run at different speeds. Is a soft starter suitable?",
+        "options": [
+          "No, it only controls starting and stopping; use a VFD",
+          "Yes, set a longer ramp",
+          "Yes, lower the current limit",
+          "Yes, if a bypass is fitted"
+        ],
+        "answer": 0,
+        "explain": "After the ramp, a soft-started motor runs at full mains speed."
+      },
+      {
+        "id": "q6",
+        "text": "Before an insulation resistance test on the motor cable, what do you do about the soft starter?",
+        "options": [
+          "Isolate, prove dead and disconnect the soft starter, following the maker's instructions",
+          "Test through it at 500 V",
+          "Leave it running",
+          "Nothing"
+        ],
+        "answer": 0,
+        "explain": "The test voltage can damage the electronics, and the circuit must be dead first.",
+        "critical": true
+      },
+      {
+        "id": "q7",
+        "text": "The current limit is set too low for a heavily loaded mixer. What happens?",
+        "options": [
+          "The motor does not have enough torque to accelerate and may stall or trip",
+          "It starts faster",
+          "It runs backwards",
+          "Nothing changes"
+        ],
+        "answer": 0,
+        "explain": "Lower current means lower torque. The load may never reach speed."
+      }
+    ]
+  },
+  "apply": {
+    "intro": "Do this on the training bench while your trainer watches. Your trainer signs it off. An app score alone never makes anyone competent or authorised.",
+    "items": [
+      {
+        "id": "a1",
+        "text": "Carries out safe isolation, including the soft starter output side, before starting work."
+      },
+      {
+        "id": "a2",
+        "text": "Wires the line contactor, soft starter, overload and run signal to the drawing and the maker's connection diagram."
+      },
+      {
+        "id": "a3",
+        "text": "Sets current limit and ramp time from the job sheet and records the settings."
+      },
+      {
+        "id": "a4",
+        "text": "Carries out insulation resistance tests with the soft starter disconnected, and records them."
+      },
+      {
+        "id": "a5",
+        "text": "Functional test with the trainer: smooth ramp, current within the limit (clamp meter), STOP, overload trip, phase loss trip and reset."
+      }
+    ]
+  }
+}

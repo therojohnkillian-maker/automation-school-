@@ -4,19 +4,19 @@
       "number": 1,
       "title": "DOL motor with start/stop",
       "moduleId": "m3",
-      "id": null
+      "id": "t1-dol"
     },
     {
       "number": 2,
       "title": "Forward/reverse conveyor",
       "moduleId": "m3",
-      "id": null
+      "id": "t2-fwd-rev"
     },
     {
       "number": 3,
       "title": "Star-delta fan",
       "moduleId": "m3",
-      "id": null
+      "id": "t3-star-delta"
     },
     {
       "number": 4,

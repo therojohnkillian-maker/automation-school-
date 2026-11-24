@@ -49,6 +49,7 @@ describe('3D equipment model', () => {
     expect(m.probe().shaftRevPerSec).toBeCloseTo(1.2);
     expect(m.tick(0.1)).toBe(true);
     c.command({ kind: 'trip-test', part: 'F2' });
+    run(c, 100);
     m.update(statusMap(c));
     expect(m.probe()).toMatchObject({ flagX: -0.45, h2Lit: true, tripFlagY: 0.55 });
     c.command({ kind: 'switch', part: 'Q1', on: false });

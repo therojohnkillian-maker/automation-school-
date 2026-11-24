@@ -104,7 +104,7 @@ function RunTab({ t }: { t: Template }) {
   const [probes, setProbes] = useState<ProbeState>(emptyProbes);
   return (
     <>
-      <p>The working circuit. Change the level with LT1's − / + buttons and watch KF1, AI1 and the lamps.</p>
+      <Markup text={t.schematicIntro} />
       <Lab circuit={sim.circuit} version={sim.version} onCommand={(c) => sim.apply((x) => x.command(c))} probes={probes} setProbes={setProbes} onTerminal={(r) => setProbes(placeProbe(probes, r))} />
       <div className="actions"><button onClick={sim.reset}>Reset circuit</button></div>
     </>
@@ -114,11 +114,35 @@ function RunTab({ t }: { t: Template }) {
 /** The value a test-sheet row should read, from the simulator after its setup. */
 export function expectedRow(t: Template, row: TestRow): number | boolean {
   const c = new Circuit(circuitById(t.circuit));
-  for (const cmd of row.setup) c.command(cmd);
+  // A person doing the test takes a moment between actions: let 200 ms pass after each one.
+  for (const cmd of row.setup) {
+    c.command(cmd);
+    for (let ms = 0; ms < 200; ms += 10) c.step(10);
+  }
+  for (let ms = 0; ms < row.wait; ms += 10) c.step(10);
   const st = c.status(row.part);
   if (row.field === 'lit') return !!st.lit;
   if (row.field === 'energised') return !!st.energised;
+  if (row.field === 'amps') return st.motor?.amps ?? 0;
+  if (row.field === 'rpm') return Math.abs(st.motor?.rpm ?? 0);
+  if (row.field === 'vac') return Math.round(c.voltage(row.a ?? '', row.b ?? '').ac);
   return row.field === 'mA' ? st.mA ?? 0 : st.eng ?? 0;
+}
+
+/** How far a typed test-sheet value may be from the simulator's value. */
+export function rowTolerance(row: TestRow, expected: number, engSpan: number): number {
+  switch (row.field) {
+    case 'mA':
+      return 0.1;
+    case 'amps':
+      return Math.max(expected * 0.03, 0.2);
+    case 'rpm':
+      return 10;
+    case 'vac':
+      return Math.max(expected * 0.02, 2);
+    default:
+      return engSpan * 0.01;
+  }
 }
 
 function TestTab({ t, profileId }: { t: Template; profileId: string }) {
@@ -138,7 +162,7 @@ function TestTab({ t, profileId }: { t: Template; profileId: string }) {
     if (typeof exp === 'boolean') ok = (v === 'yes') === exp && v !== '';
     else {
       const n = Number(v.replace(',', '.'));
-      ok = v.trim() !== '' && !Number.isNaN(n) && Math.abs(n - exp) <= (row.field === 'mA' ? 0.1 : span * 0.01);
+      ok = v.trim() !== '' && !Number.isNaN(n) && Math.abs(n - exp) <= rowTolerance(row, exp, span);
     }
     setRes({ ...res, [row.id]: ok });
     await recordAttempt(profileId, { kind: 'template-test', templateId: t.id, lessonId: null, row: row.id, passed: ok });
@@ -146,7 +170,7 @@ function TestTab({ t, profileId }: { t: Template; profileId: string }) {
   const done = t.testSheet.every((r) => res[r.id]);
   return (
     <>
-      <p>Do the loop check and alarm tests on the live circuit, then record what you see, as you would on a real test sheet.</p>
+      <Markup text={t.testIntro} />
       {done && <Notice kind="ok">Test sheet complete: every result is within tolerance.</Notice>}
       <Lab circuit={sim.circuit} version={sim.version} onCommand={(c) => sim.apply((x) => x.command(c))} probes={probes} setProbes={setProbes} onTerminal={(r) => setProbes(placeProbe(probes, r))}>
         <h3>Test sheet</h3>
@@ -169,7 +193,7 @@ function TestTab({ t, profileId }: { t: Template; profileId: string }) {
                 )}
                 {res[row.id] ? <StatusChip status="passed" label="Pass" /> : <button type="button" onClick={() => void check(row)}>Check</button>}
               </div>
-              {res[row.id] === false && <p className="explain">✖ Outside tolerance. Set the level exactly, then read again.</p>}
+              {res[row.id] === false && <p className="explain">✖ Outside tolerance. Set up the test exactly as written, then read again.</p>}
             </li>
           ))}
         </ol>

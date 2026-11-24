@@ -1,0 +1,602 @@
+{
+  "id": "m3-l3",
+  "moduleId": "m3",
+  "version": "1.0.0",
+  "title": "Forward / reverse starter with interlocks",
+  "minutes": 60,
+  "summary": "Reverse a motor by swapping two phases, and stop the two contactors ever closing together.",
+  "requires": [
+    "m3-l1"
+  ],
+  "why": {
+    "text": "The return conveyor **CV-7** at the fictional Riverside plant must run both ways: forward to feed crates, reverse to clear a jam. That needs two contactors, one for each direction.\n\nIf both ever close at the same time, two phases are joined straight through the contactors. That is a short circuit with an arc inside the panel. Your job is to make that impossible."
+  },
+  "learn": {
+    "cards": [
+      {
+        "title": "Reversing a three-phase motor",
+        "text": "The direction of a three-phase motor depends on the [[phase sequence]] at U1, V1, W1. Swap **any two** phases and it runs the other way.\n\nA reversing starter has two contactors: **KM1 forward** passes L1, L2, L3 straight through; **KM2 reverse** swaps two of them (here L1 and L3). Their outputs join and go through one overload to the motor.",
+        "circuit": "m3-fwd-rev"
+      },
+      {
+        "title": "Why both must never close",
+        "text": "Look at the power circuit: the output of KM1 pole 1 and KM2 pole 1 are joined. With KM1 in, that point is L1. With KM2 in, it is L3. If both close, L1 and L3 are joined through the contactors: a phase-to-phase short circuit.\n\nThe protective device should trip, but the arc can damage the contactors and anyone near an open panel."
+      },
+      {
+        "title": "The electrical interlock",
+        "text": "Each coil circuit goes through the **other** contactor's [[NC]] auxiliary contact (21-22):\n- KM1 coil is fed through **KM2 21-22**.\n- KM2 coil is fed through **KM1 21-22**.\n\nWhen KM1 is in, its 21-22 is open, so KM2 cannot pull in, whatever button is pressed. This is the electrical [[interlock]]."
+      },
+      {
+        "title": "The mechanical interlock",
+        "text": "Reversing contactor pairs are usually fitted with a **mechanical interlock**: a lever between them that physically stops both closing. It still works if an auxiliary contact welds or a wire is wrong.\n\nGood practice uses **both** interlocks. Neither one is a reason to leave out the other."
+      },
+      {
+        "title": "Stop before reversing",
+        "text": "In this circuit you must press STOP before changing direction, because the running contactor's holding contact keeps it in.\n\nReversing a motor at full speed (plugging) draws a very high current and gives the gearbox and belts a hard shock. Some machines need a short delay so the motor stops before it reverses."
+      },
+      {
+        "title": "Overload and TRIP lamp",
+        "text": "One overload F2 after both contactors protects the motor in both directions. Its 95-96 contact sits in series before both coil circuits, so a trip drops out whichever contactor is in. Contact 97-98 lights TRIP lamp H1.\n\nAs before, resetting the overload must not restart the motor."
+      }
+    ]
+  },
+  "show": {
+    "kind": "circuit",
+    "circuit": "m3-fwd-rev",
+    "intro": "This reversing starter is wired correctly. Watch the interlocks at work in the event log.",
+    "tasks": [
+      {
+        "id": "t1",
+        "text": "Press **FORWARD (S1)**. KM1 pulls in and the motor runs forward (⟳).",
+        "when": [
+          {
+            "part": "M1",
+            "motor": "running",
+            "direction": "forward"
+          }
+        ]
+      },
+      {
+        "id": "t2",
+        "text": "While it runs forward, press and hold **REVERSE (S2)**. Nothing happens: KM1 21-22 is open, so the KM2 coil gets no supply.",
+        "when": [
+          {
+            "part": "S2",
+            "pressed": true
+          },
+          {
+            "part": "KM1",
+            "energised": true
+          },
+          {
+            "part": "KM2",
+            "energised": false
+          }
+        ]
+      },
+      {
+        "id": "t3",
+        "text": "Measure across **KM1 21-22** in V=. It reads 24 V: the open interlock contact is what blocks KM2.",
+        "measure": {
+          "a": "KM1:21",
+          "b": "KM1:22",
+          "mode": "VDC"
+        }
+      },
+      {
+        "id": "t4",
+        "text": "Release S2 and press **STOP (S0)**. The motor coasts down.",
+        "when": [
+          {
+            "part": "KM1",
+            "energised": false
+          },
+          {
+            "part": "KM2",
+            "energised": false
+          }
+        ]
+      },
+      {
+        "id": "t5",
+        "text": "Press **REVERSE (S2)**. KM2 pulls in and the motor runs in reverse (⟲).",
+        "when": [
+          {
+            "part": "M1",
+            "motor": "running",
+            "direction": "reverse"
+          }
+        ]
+      },
+      {
+        "id": "t6",
+        "text": "Press **TEST** on F2. KM2 drops out and TRIP lamp H1 lights. Then press RESET: the motor does not restart.",
+        "when": [
+          {
+            "part": "F2",
+            "tripped": false
+          },
+          {
+            "part": "KM2",
+            "energised": false
+          },
+          {
+            "part": "KM1",
+            "energised": false
+          }
+        ]
+      }
+    ]
+  },
+  "build": {
+    "kind": "circuit",
+    "circuit": "m3-fwd-rev",
+    "checks": [
+      {
+        "watchNotBoth": [
+          "KM1",
+          "KM2"
+        ],
+        "fail": "KM1 and KM2 were both energised at the same time. That joins two phases: a short circuit. Each coil needs the other contactor's NC contact 21-22 in series with it."
+      },
+      {
+        "do": {
+          "kind": "switch",
+          "part": "Q1",
+          "on": true
+        }
+      },
+      {
+        "do": {
+          "kind": "switch",
+          "part": "F1",
+          "on": true
+        }
+      },
+      {
+        "wait": 100
+      },
+      {
+        "expect": {
+          "noShorts": true
+        },
+        "fail": "A protective device tripped as soon as power was applied. Look for a wire joining two different phases, or + to 0 V."
+      },
+      {
+        "expect": {
+          "stable": true
+        },
+        "fail": "The circuit will not settle (relay chatter). Check that no coil switches off its own supply."
+      },
+      {
+        "expect": {
+          "part": "G1",
+          "psuOn": true
+        },
+        "fail": "The 24 V supply G1 is off. Check the feed from Q1 through F1 to G1."
+      },
+      {
+        "expect": {
+          "part": "KM1",
+          "energised": false
+        },
+        "fail": "KM1 pulls in without anyone pressing FORWARD."
+      },
+      {
+        "expect": {
+          "part": "KM2",
+          "energised": false
+        },
+        "fail": "KM2 pulls in without anyone pressing REVERSE."
+      },
+      {
+        "do": {
+          "kind": "press",
+          "part": "S1"
+        }
+      },
+      {
+        "wait": 100
+      },
+      {
+        "do": {
+          "kind": "release",
+          "part": "S1"
+        }
+      },
+      {
+        "wait": 2000
+      },
+      {
+        "expect": {
+          "part": "KM1",
+          "energised": true
+        },
+        "fail": "Pressing and releasing FORWARD (S1) does not pull in and hold KM1. Trace G1 + through S0, F2 95-96, S1 (with KM1 13-14 in parallel) and KM2 21-22 to KM1 A1, then A2 to 0 V."
+      },
+      {
+        "expect": {
+          "part": "M1",
+          "motor": "running",
+          "direction": "forward"
+        },
+        "fail": "With KM1 in, the motor does not run forward. Check the KM1 power wiring and F2 to U1, V1, W1."
+      },
+      {
+        "do": {
+          "kind": "press",
+          "part": "S2"
+        }
+      },
+      {
+        "wait": 100
+      },
+      {
+        "expect": {
+          "part": "KM2",
+          "energised": false
+        },
+        "fail": "While running forward, pressing REVERSE pulled in KM2. KM1 21-22 must be in series with the KM2 coil so reverse is blocked."
+      },
+      {
+        "do": {
+          "kind": "release",
+          "part": "S2"
+        }
+      },
+      {
+        "do": {
+          "kind": "press",
+          "part": "S0"
+        }
+      },
+      {
+        "wait": 100
+      },
+      {
+        "do": {
+          "kind": "release",
+          "part": "S0"
+        }
+      },
+      {
+        "wait": 3000
+      },
+      {
+        "expect": {
+          "part": "KM1",
+          "energised": false
+        },
+        "fail": "STOP (S0) does not drop out KM1."
+      },
+      {
+        "do": {
+          "kind": "press",
+          "part": "S2"
+        }
+      },
+      {
+        "wait": 100
+      },
+      {
+        "do": {
+          "kind": "release",
+          "part": "S2"
+        }
+      },
+      {
+        "wait": 2000
+      },
+      {
+        "expect": {
+          "part": "KM2",
+          "energised": true
+        },
+        "fail": "Pressing and releasing REVERSE (S2) does not pull in and hold KM2. Trace through S2 (with KM2 13-14 in parallel) and KM1 21-22 to KM2 A1."
+      },
+      {
+        "expect": {
+          "part": "M1",
+          "motor": "running",
+          "direction": "reverse"
+        },
+        "fail": "With KM2 in, the motor does not run in reverse. KM2 must swap two phases compared with KM1 (here L1 and L3)."
+      },
+      {
+        "do": {
+          "kind": "press",
+          "part": "S1"
+        }
+      },
+      {
+        "wait": 100
+      },
+      {
+        "expect": {
+          "part": "KM1",
+          "energised": false
+        },
+        "fail": "While running in reverse, pressing FORWARD pulled in KM1. KM2 21-22 must be in series with the KM1 coil."
+      },
+      {
+        "do": {
+          "kind": "release",
+          "part": "S1"
+        }
+      },
+      {
+        "do": {
+          "kind": "trip-test",
+          "part": "F2"
+        }
+      },
+      {
+        "wait": 100
+      },
+      {
+        "expect": {
+          "part": "KM2",
+          "energised": false
+        },
+        "fail": "An overload trip does not stop the motor. F2 95-96 must be in series with both coil circuits."
+      },
+      {
+        "expect": {
+          "part": "H1",
+          "lit": true
+        },
+        "fail": "The TRIP lamp H1 does not light when F2 trips."
+      },
+      {
+        "do": {
+          "kind": "reset",
+          "part": "F2"
+        }
+      },
+      {
+        "wait": 100
+      },
+      {
+        "expect": {
+          "part": "KM2",
+          "energised": false
+        },
+        "fail": "After resetting F2 the motor restarted by itself. It must need a new START press."
+      },
+      {
+        "expect": {
+          "noShorts": true
+        },
+        "fail": "A protective device tripped during the test."
+      }
+    ],
+    "guided": {
+      "intro": "The power circuit and the 24 V supply are wired. **Wire the control circuit**: both direction buttons, both holding contacts, both interlocks and both coils.",
+      "removeWires": [
+        "c7",
+        "c8",
+        "c9",
+        "c10",
+        "c11",
+        "c12",
+        "c13",
+        "c14",
+        "c15",
+        "c16",
+        "c17",
+        "c18"
+      ],
+      "hints": [
+        "From F2 96, feed both direction buttons: F2:96 to S1:13 and F2:96 to S2:13.",
+        "Holding contacts in parallel with each button: S1:13 to KM1:13 and S1:14 to KM1:14; S2:13 to KM2:13 and S2:14 to KM2:14.",
+        "Forward path: S1:14 to KM2:21 (the REVERSE contactor's NC), then KM2:22 to KM1:A1.",
+        "Reverse path: S2:14 to KM1:21, then KM1:22 to KM2:A1.",
+        "Both A2 terminals return to G1 − (0 V)."
+      ]
+    },
+    "unguided": {
+      "intro": "Now wire the **reverse contactor power wiring** (with the phase swap) and the **whole control circuit**, with no hints.",
+      "removeWires": [
+        "r1",
+        "r2",
+        "r3",
+        "r4",
+        "r5",
+        "r6",
+        "c7",
+        "c8",
+        "c9",
+        "c10",
+        "c11",
+        "c12",
+        "c13",
+        "c14",
+        "c15",
+        "c16",
+        "c17",
+        "c18"
+      ]
+    }
+  },
+  "break": {
+    "kind": "circuit",
+    "circuit": "m3-fwd-rev",
+    "intro": "This reversing starter has **one hidden fault**. Try both directions, then find the cause by measuring. In this simulator you may measure voltage with the power on. On a real panel, live testing is only allowed when it is justified, by a competent person, following the site risk assessment and GS38. Switch off Q1 before any Ω test.",
+    "faults": [
+      {
+        "id": "fr-weld",
+        "kind": "contact-closed",
+        "part": "KM1",
+        "a": "21",
+        "b": "22",
+        "report": "KM1 interlock contact 21-22 is welded closed: reverse is no longer blocked while running forward."
+      },
+      {
+        "id": "fr-coil",
+        "kind": "coil-open",
+        "part": "KM2",
+        "report": "The KM2 coil is open circuit."
+      },
+      {
+        "id": "fr-latch",
+        "kind": "contact-open",
+        "part": "KM1",
+        "a": "13",
+        "b": "14",
+        "report": "Forward holding contact KM1 13-14 does not close."
+      },
+      {
+        "id": "fr-pole",
+        "kind": "contact-open",
+        "part": "KM2",
+        "a": "3",
+        "b": "4",
+        "report": "KM2 main pole 3-4 is open: reverse runs on two phases."
+      },
+      {
+        "id": "fr-wire",
+        "kind": "wire-open",
+        "wire": "c16",
+        "report": "The wire from S2 terminal 14 to KM1 terminal 21 is broken."
+      }
+    ],
+    "parMeasurements": 6,
+    "parSeconds": 360,
+    "extraReports": [
+      "Nothing is wrong with the starter."
+    ]
+  },
+  "prove": {
+    "passMark": 0.8,
+    "questions": [
+      {
+        "id": "q1",
+        "text": "How do you reverse a three-phase induction motor?",
+        "options": [
+          "Swap any two of the three phases",
+          "Swap the PE and N wires",
+          "Reverse the 24 V control supply",
+          "Swap all three phases round by one place"
+        ],
+        "answer": 0,
+        "explain": "Swapping any two phases reverses the rotating field. Moving all three round by one place keeps the same sequence and direction."
+      },
+      {
+        "id": "q2",
+        "text": "In a reversing starter, why is KM2 21-22 wired in series with the KM1 coil?",
+        "options": [
+          "So KM1 cannot pull in while KM2 is in, which would short two phases",
+          "To make KM1 latch",
+          "To light the run lamp",
+          "To reverse the motor"
+        ],
+        "answer": 0,
+        "explain": "This is the electrical interlock. KM1 and KM2 together would join two phases through the contactors.",
+        "critical": true
+      },
+      {
+        "id": "q3",
+        "text": "What happens if KM1 and KM2 close together?",
+        "options": [
+          "Two phases are joined: a short circuit, an arc and a trip",
+          "The motor stops gently",
+          "The motor runs at half speed",
+          "Nothing, the overload prevents it"
+        ],
+        "answer": 0,
+        "explain": "The joined outputs carry two different phases. The overload does not prevent a short; the short-circuit protection trips, often with damage.",
+        "critical": true
+      },
+      {
+        "id": "q4",
+        "text": "Why use a mechanical interlock as well as the electrical one?",
+        "options": [
+          "It still stops both contactors closing if an auxiliary contact welds or a wire is wrong",
+          "It is cheaper than wire",
+          "It replaces the overload",
+          "It makes the motor reverse faster"
+        ],
+        "answer": 0,
+        "explain": "Two different kinds of protection: one failure does not lead to a short."
+      },
+      {
+        "id": "q5",
+        "text": "Why must you press STOP before reversing in this circuit, and why is that good?",
+        "options": [
+          "The holding contact keeps the running contactor in; it also avoids reversing at full speed",
+          "STOP resets the overload",
+          "STOP charges the coil",
+          "It is not needed"
+        ],
+        "answer": 0,
+        "explain": "Reversing at speed (plugging) gives a very high current and mechanical shock."
+      },
+      {
+        "id": "q6",
+        "text": "The motor runs forward correctly but runs forward again when you press REVERSE. What is the likely cause?",
+        "options": [
+          "The KM2 power wiring does not swap two phases",
+          "The interlock is missing",
+          "The overload has tripped",
+          "The STOP button is faulty"
+        ],
+        "answer": 0,
+        "explain": "Reverse only works if KM2 swaps two phases compared with KM1."
+      },
+      {
+        "id": "q7",
+        "text": "Where is the overload in a reversing starter?",
+        "options": [
+          "One overload after both contactors, protecting both directions",
+          "One for each direction, before the contactors",
+          "In the control circuit only",
+          "No overload is needed"
+        ],
+        "answer": 0,
+        "explain": "Both contactor outputs feed the same overload, so the motor is protected in both directions."
+      },
+      {
+        "id": "q8",
+        "text": "You need to correct swapped phases in the power wiring. What must you do first?",
+        "options": [
+          "Isolate, lock off and prove dead",
+          "Press STOP",
+          "Switch off F1 only",
+          "Hold the contactor in by hand"
+        ],
+        "answer": 0,
+        "explain": "Power wiring is at 400 V. STOP and F1 do not isolate it.",
+        "critical": true
+      }
+    ]
+  },
+  "apply": {
+    "intro": "Do this on the training bench while your trainer watches. Your trainer signs it off. An app score alone never makes anyone competent or authorised.",
+    "items": [
+      {
+        "id": "a1",
+        "text": "Carries out safe isolation before starting work."
+      },
+      {
+        "id": "a2",
+        "text": "Wires both contactors with the correct phase swap, a single overload, and the electrical interlocks, to the drawing."
+      },
+      {
+        "id": "a3",
+        "text": "Fits the mechanical interlock between the contactors (where supplied) and checks it moves freely."
+      },
+      {
+        "id": "a4",
+        "text": "Before energising, carries out continuity and insulation resistance tests and records them."
+      },
+      {
+        "id": "a5",
+        "text": "Functional test with the trainer: forward, reverse, STOP, each interlock blocks the other direction, overload trip, no automatic restart."
+      },
+      {
+        "id": "a6",
+        "text": "Checks the motor turns the right way for FORWARD with the machine safe (guards on, load uncoupled where needed)."
+      }
+    ]
+  }
+}

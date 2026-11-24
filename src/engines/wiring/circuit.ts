@@ -70,7 +70,13 @@ export const PART_TERMINALS: Record<PartType, string[]> = {
   prox_pnp: ['BN', 'BU', 'BK'],
   prox_npn: ['BN', 'BU', 'BK'],
   di: ['I0', 'I1', 'M'],
+  motor6: ['U1', 'V1', 'W1', 'U2', 'V2', 'W2', 'PE'],
+  timer: ['A1', 'A2', '15', '16', '17', '18'],
+  softstart: ['1L1', '3L2', '5L3', '2T1', '4T2', '6T3', 'IN1', 'COM'],
 };
+
+const isMotor = (t: PartType) => t === 'motor3' || t === 'motor6';
+const hasCoil = (t: PartType) => t === 'contactor' || t === 'timer';
 
 /** The terminals a part has. Terminal strips are numbered 1..count. */
 export function terminalsOf(p: PartJson): string[] {
@@ -89,6 +95,10 @@ const SINGLE_PHASING_MULTIPLE = 1.73;
 const ACCEL_MS = 1200;
 const OL_TAU_MS = 100_000; // VERIFY: simplified Class 10 thermal model
 const OL_TRIP = 1.44; // trips above about 1.2 × setting
+/** Contactor release (drop-out) time, ms. Pick-up is treated as instant. VERIFY: typical value from contactor data. */
+export const RELEASE_MS = 30;
+/** Shortest push-button press, ms of simulated time. */
+export const MIN_PRESS_MS = 150;
 const OL_RESET_BELOW = 1.0;
 const AI_OHMS = 250; // analog input / trip amplifier input resistance
 const DI_OHMS = 3000; // digital input, about 8 mA at 24 V
@@ -125,11 +135,20 @@ interface Runtime {
   psuOn: boolean;
   burnt: boolean;
   thermal: number;
-  motor: { state: MotorState; rpm: number; amps: number; direction: 'forward' | 'reverse' | null };
+  motor: { state: MotorState; rpm: number; amps: number; direction: 'forward' | 'reverse' | null; connection?: 'correct' | 'low' | 'high' | null };
   value: number;
   loopA: number;
   relays: { hi: boolean; lo: boolean };
   config?: { rangeLo: number; rangeHi: number };
+  elapsed: number;
+  done: boolean;
+  ssFault: boolean;
+  /** Contactor: simulated time when a released armature lets go (null = not releasing). */
+  releaseAt: number | null;
+  releases: number[];
+  /** Push button: when it was pressed, and a deferred release after a very short tap. */
+  pressedAt: number;
+  releaseButtonAt: number | null;
 }
 
 interface Analysis {
@@ -180,6 +199,13 @@ export class Circuit {
         value: p.init?.value ?? 0,
         loopA: 0,
         relays: { hi: false, lo: false },
+        elapsed: 0,
+        done: false,
+        ssFault: false,
+        releaseAt: null,
+        releases: [],
+        pressedAt: 0,
+        releaseButtonAt: null,
       });
     }
     for (const f of faults) {
@@ -234,10 +260,21 @@ export class Circuit {
     const name = cmd.part;
     switch (cmd.kind) {
       case 'press':
-        if (p.def.type === 'pb_no' || p.def.type === 'pb_nc') p.pressed = true;
+        if (p.def.type === 'pb_no' || p.def.type === 'pb_nc') {
+          p.pressed = true;
+          p.pressedAt = this.t;
+          p.releaseButtonAt = null;
+        }
         break;
       case 'release':
-        if (p.def.type === 'pb_no' || p.def.type === 'pb_nc') p.pressed = false;
+        if (p.def.type === 'pb_no' || p.def.type === 'pb_nc') {
+          // A real press always lasts longer than a contactor's release time. A very quick tap is held to the minimum.
+          if (this.t - p.pressedAt < MIN_PRESS_MS) {
+            p.releaseButtonAt = p.pressedAt + MIN_PRESS_MS;
+            return;
+          }
+          p.pressed = false;
+        }
         break;
       case 'switch':
         if (p.def.type === 'isolator3' && cmd.on && p.locked) {
@@ -364,7 +401,10 @@ export class Circuit {
       else if (t === 'trip') {
         add(p.relays.hi, ['13', '14']);
         add(p.relays.lo, ['23', '24']);
-      }
+      } else if (t === 'timer') {
+        add(!p.done, ['15', '16']);
+        add(p.done, ['17', '18']);
+      } else if (t === 'softstart') add(p.energised && !p.ssFault, ['1L1', '2T1'], ['3L2', '4T2'], ['5L3', '6T3']);
       for (const [a, b] of all) {
         const k = `${id}:${a}-${b}`;
         const closed = (pairs.some(([x, y]) => x === a && y === b) && !stuckOpen.has(k)) || stuckClosed.has(k);
@@ -378,7 +418,17 @@ export class Circuit {
   private loads(): [string, string, number][] {
     const out: [string, string, number][] = [];
     for (const [id, p] of this.parts) {
-      if (p.def.type === 'contactor' && !p.burnt && !this.coilOpen(id)) out.push([key(id, 'A1'), key(id, 'A2'), COIL_OHMS]);
+      if (hasCoil(p.def.type) && !p.burnt && !this.coilOpen(id)) out.push([key(id, 'A1'), key(id, 'A2'), COIL_OHMS]);
+      if (isMotor(p.def.type)) {
+        const ins = (this.faults.find((f) => f.kind === 'insulation' && f.part === id) as { megohms: number } | undefined)?.megohms ?? p.def.params?.insulationMOhm ?? 500;
+        for (const t of ['U1', 'V1', 'W1']) out.push([key(id, t), key(id, 'PE'), ins * 1e6]);
+      }
+      if (p.def.type === 'motor6') {
+        const r = p.def.params?.windingOhms ?? 9;
+        for (const w of ['U', 'V', 'W'] as const) {
+          if (!this.faults.some((f) => f.kind === 'winding-open' && f.part === id && f.winding === w)) out.push([key(id, `${w}1`), key(id, `${w}2`), r]);
+        }
+      }
       if (p.def.type === 'lamp24' && !p.burnt && !this.coilOpen(id)) out.push([key(id, 'X1'), key(id, 'X2'), LAMP_OHMS]);
       if (p.def.type === 'resistor' && !this.coilOpen(id)) out.push([key(id, '1'), key(id, '2'), p.def.params?.ohms ?? 1000]);
       if (p.def.type === 'ai' || p.def.type === 'trip') out.push([key(id, '+'), key(id, '-'), AI_OHMS]);
@@ -590,7 +640,7 @@ export class Circuit {
       }
       if (changed) continue;
       for (const [id, p] of this.parts) {
-        const pair = p.def.type === 'contactor' ? ['A1', 'A2'] : p.def.type === 'lamp24' ? ['X1', 'X2'] : null;
+        const pair = hasCoil(p.def.type) ? ['A1', 'A2'] : p.def.type === 'lamp24' ? ['X1', 'X2'] : null;
         if (!pair || p.burnt) continue;
         const vv = v(key(id, pair[0]), key(id, pair[1]));
         if (vv.ac >= 100) {
@@ -628,12 +678,45 @@ export class Circuit {
       }
       if (changed) continue;
       for (const [id, p] of this.parts) {
-        if (p.def.type !== 'contactor') continue;
+        if (p.def.type !== 'softstart') continue;
+        const run = v(key(id, 'IN1'), key(id, 'COM')).dc >= DI_ON_V;
+        if (run && !p.energised) {
+          const phases = new Set(['1L1', '3L2', '5L3'].map((t) => this.phaseFrom(a, key(id, t))).filter(Boolean));
+          if (phases.size < 3) {
+            if (!p.ssFault && !quiet) this.note(`${id} soft starter FAULT: phase loss on its supply. Remove the run signal to reset.`);
+            p.ssFault = true;
+          }
+        }
+        if (!run && p.ssFault) p.ssFault = false;
+        if (run !== p.energised) {
+          p.energised = run;
+          if (!quiet) this.note(`${id} soft starter ${run ? (p.ssFault ? 'run signal on, but in FAULT' : 'run signal on: ramping up') : 'run signal off: output off'}.`);
+          changed = true;
+        }
+      }
+      if (changed) continue;
+      for (const [id, p] of this.parts) {
+        if (!hasCoil(p.def.type)) continue;
         const vv = Math.abs(v(key(id, 'A1'), key(id, 'A2')).dc);
         const want = !p.burnt && !this.coilOpen(id) && (p.energised ? vv >= DROP_OUT_V : vv >= PICK_UP_V);
+        if (want && p.releaseAt !== null) p.releaseAt = null; // coil came back before the armature let go
         if (want !== p.energised) {
+          if (!want && p.def.type === 'contactor') {
+            // A contactor armature takes a few milliseconds to release. Its contacts stay where they are until then.
+            if (p.releaseAt === null) {
+              p.releaseAt = this.t + RELEASE_MS;
+              if (!quiet) this.note(`${id} coil de-energised: contactor drops out.`);
+            }
+            continue;
+          }
           p.energised = want;
-          if (!quiet) this.note(want ? `${id} coil energised: contactor pulls in.` : `${id} coil de-energised: contactor drops out.`);
+          if (p.def.type === 'timer') {
+            if (!want) {
+              p.elapsed = 0;
+              p.done = false;
+            }
+            if (!quiet) this.note(want ? `${id} timer started (${((p.def.params?.delayMs ?? 0) / 1000).toFixed(1)} s).` : `${id} timer reset.`);
+          } else if (!quiet) this.note(`${id} coil energised: contactor pulls in.`);
           changed = true;
         }
       }
@@ -652,12 +735,45 @@ export class Circuit {
   step(ms: number) {
     this.t += ms;
     let topologyChanged = false;
-    for (const [id, p] of this.parts) if (p.def.type === 'motor3') this.updateMotor(id, p, ms);
+    for (const p of this.parts.values()) {
+      if (p.releaseButtonAt === null || this.t < p.releaseButtonAt) continue;
+      p.releaseButtonAt = null;
+      p.pressed = false;
+      topologyChanged = true;
+    }
+    if (topologyChanged) this.solve();
+    for (const [id, p] of this.parts) {
+      if (p.releaseAt === null || this.t < p.releaseAt) continue;
+      p.releaseAt = null;
+      p.energised = false;
+      topologyChanged = true;
+      // Chatter: a contactor that keeps dropping out and pulling straight back in.
+      p.releases = p.releases.filter((t) => this.t - t < 1000);
+      p.releases.push(this.t);
+      if (p.releases.length > 5 && !this.unstable) {
+        this.unstable = true;
+        this.note(`${id} keeps dropping out and pulling in (relay chatter). Check that its coil does not switch off its own supply.`);
+      }
+    }
+    if (topologyChanged) {
+      this.solve();
+      topologyChanged = false;
+    }
+    for (const [id, p] of this.parts) if (isMotor(p.def.type)) this.updateMotor(id, p, ms);
+    for (const [id, p] of this.parts) {
+      if (p.def.type !== 'timer' || !p.energised || p.done) continue;
+      p.elapsed += ms;
+      if (p.elapsed >= (p.def.params?.delayMs ?? 0)) {
+        p.done = true;
+        this.note(`${id} time is up: delayed contacts change over.`);
+        topologyChanged = true;
+      }
+    }
     for (const [id, p] of this.parts) {
       if (p.def.type !== 'overload') continue;
       const motor = this.motorFedBy(id);
       const setting = p.def.params?.setting ?? 1;
-      const amps = motor ? this.parts.get(motor)!.motor.amps : 0;
+      const amps = motor ? this.overloadAmps(motor) : 0;
       p.thermal += ((amps / setting) ** 2 - p.thermal) * (ms / OL_TAU_MS);
       if (!p.tripped && p.thermal >= OL_TRIP) {
         p.tripped = true;
@@ -666,6 +782,11 @@ export class Circuit {
       }
     }
     if (topologyChanged) this.solve();
+  }
+
+  private phaseFrom(a: Analysis, term: string): PhaseName | null {
+    const p = a.pots.get(a.uf.find(term));
+    return p ? classifyPhase(p) : null;
   }
 
   private phaseAt(term: string): PhaseName | null {
@@ -686,25 +807,43 @@ export class Circuit {
     const u = this.phaseAt(key(id, 'U1'));
     const v = this.phaseAt(key(id, 'V1'));
     const w = this.phaseAt(key(id, 'W1'));
-    const distinct = new Set([u, v, w].filter(Boolean));
+    let distinct = new Set([u, v, w].filter(Boolean));
     const m = p.motor;
     const prev = m.state;
+    // 6-terminal motors: the windings must actually have voltage across them (star or delta links fitted).
+    let ratio = 1;
+    if (p.def.type === 'motor6') {
+      // An open winding can show voltage across it but carries no current, so it does not count.
+      const wv = (['U', 'V', 'W'] as const).map((x) =>
+        this.faults.some((f) => f.kind === 'winding-open' && f.part === id && f.winding === x) ? 0 : this.voltage(key(id, `${x}1`), key(id, `${x}2`)).ac,
+      );
+      const live = wv.filter((x) => x >= 100);
+      ratio = live.length ? live.reduce((a2, b) => a2 + b, 0) / live.length / (prm.windingVolts ?? 400) : 0;
+      if (live.length === 0) distinct = new Set();
+      else if (live.length < 3 && distinct.size === 3) distinct = new Set([u, v]);
+      m.connection = live.length < 3 ? null : ratio < 0.8 ? 'low' : ratio > 1.25 ? 'high' : 'correct';
+    }
+    const ss = this.softStarterFor(id);
+    const startAmps = Math.min(START_MULTIPLE * flc * Math.min(1, ratio * ratio), ss ? (ss.def.params?.currentLimit ?? 3) * flc : Infinity);
+    const accel = ss ? ss.def.params?.rampMs ?? 5000 : ACCEL_MS / Math.max(0.33, Math.min(1, ratio * ratio));
+    const runAmps = m.connection === 'low' ? 1.3 * flc : m.connection === 'high' ? 2.5 * flc : flc;
     if (u && v && w && distinct.size === 3) {
       const dir = rotation(u, v, w) as 'forward' | 'reverse';
       const target = (dir === 'forward' ? 1 : -1) * rated;
       if (m.state !== 'running' || Math.sign(m.rpm) !== Math.sign(target)) {
-        if (m.state !== 'starting') this.note(`${id} starting (${dir}).`);
+        if (m.state !== 'starting') this.note(`${id} starting (${dir})${m.connection === 'low' ? ', windings at reduced voltage (star)' : ''}.`);
         m.state = 'starting';
         m.direction = dir;
-        m.amps = START_MULTIPLE * flc;
-        const stepRpm = (rated * ms) / ACCEL_MS;
+        m.amps = startAmps;
+        const stepRpm = (rated * ms) / accel;
         m.rpm = target > m.rpm ? Math.min(target, m.rpm + stepRpm) : Math.max(target, m.rpm - stepRpm);
         if (m.rpm === target) {
           m.state = 'running';
-          m.amps = flc;
-          this.note(`${id} running ${dir}: ${Math.round(rated)} rpm, ${flc.toFixed(1)} A.`);
+          m.amps = runAmps;
+          this.note(`${id} running ${dir}: ${Math.round(rated)} rpm, ${runAmps.toFixed(1)} A.`);
+          if (m.connection === 'high') this.note(`${id} WARNING: windings over-voltage (connected in delta for a star rating). Current is far too high.`);
         }
-      } else m.amps = flc;
+      } else m.amps = runAmps;
     } else if (distinct.size === 2) {
       if (m.state === 'running' || m.state === 'starting' || m.state === 'single-phasing') {
         if (m.state !== 'single-phasing') this.note(`${id} has lost a phase: still turning on two phases, current is high.`);
@@ -772,14 +911,15 @@ export class Circuit {
       adj.set(x, [...(adj.get(x) ?? []), y]);
       adj.set(y, [...(adj.get(y) ?? []), x]);
     }
-    const comp = new Set([ra]);
-    const stack = [ra, rb];
-    comp.add(rb);
+    // Search outward from the probes. Supply-held nodes (such as PE) are reached but not passed through.
+    const held = (r: string) => an.nodeSrc.has(r);
+    const comp = new Set([ra, rb]);
+    const stack = [ra, rb].filter((r) => !held(r));
     while (stack.length) {
       const n = stack.pop()!;
       for (const m of adj.get(n) ?? []) if (!comp.has(m)) {
         comp.add(m);
-        stack.push(m);
+        if (!held(m)) stack.push(m);
       }
     }
     // Live means energised now, or still connected to a supply conductor (N and 0 V included). Earth alone is fine.
@@ -797,7 +937,7 @@ export class Circuit {
       const n = st.pop()!;
       for (const m of adj.get(n) ?? []) if (!compA.has(m)) {
         compA.add(m);
-        st.push(m);
+        if (m !== rb && !held(m)) st.push(m);
       }
     }
     if (!compA.has(rb)) return { ohms: null, live: false };
@@ -806,7 +946,7 @@ export class Circuit {
     const A = nodes.map(() => nodes.map(() => 0));
     const B = nodes.map((n) => [n === ra ? 1 : 0]);
     for (const [x, y, g] of edges) {
-      if (!compA.has(x)) continue;
+      if (!compA.has(x) || !compA.has(y)) continue;
       for (const [p, q] of [
         [x, y],
         [y, x],
@@ -822,11 +962,38 @@ export class Circuit {
     return { ohms: sol ? sol[idx.get(ra)!][0] : null, live: false };
   }
 
+  /**
+   * Current through an overload feeding this motor's U1/V1/W1.
+   * A 6-terminal motor running in delta through a delta contactor (no links in its terminal box) is the star-delta case:
+   * the overload is in the winding circuit and carries line current ÷ √3. Otherwise it carries line current.
+   */
+  private overloadAmps(motorId: string): number {
+    const p = this.parts.get(motorId)!;
+    const amps = p.motor.amps;
+    if (p.def.type !== 'motor6') return amps;
+    const own = (ref: string) => ref.startsWith(`${motorId}:`);
+    const boxLinks = this.wires.some((w) => own(w.a) && own(w.b));
+    const n = (t: string) => this.nodeOf(key(motorId, t));
+    const star = n('U2') === n('V2') && n('V2') === n('W2');
+    return !boxLinks && !star ? amps / Math.sqrt(3) : amps;
+  }
+
+  /** A soft starter whose outputs feed this motor's U1/V1/W1. */
+  private softStarterFor(motorId: string): Runtime | null {
+    const ins = ['U1', 'V1', 'W1'].map((t) => this.nodeOf(key(motorId, t))).sort().join('|');
+    for (const [id, p] of this.parts) {
+      if (p.def.type !== 'softstart') continue;
+      const outs = ['2T1', '4T2', '6T3'].map((t) => this.nodeOf(key(id, t))).sort().join('|');
+      if (outs === ins) return p;
+    }
+    return null;
+  }
+
   /** The motor whose U1/V1/W1 are on the same nodes as this overload's 2/4/6 (any order). */
   motorFedBy(overloadId: string): string | null {
     const outs = ['2', '4', '6'].map((t) => this.nodeOf(key(overloadId, t))).sort().join('|');
     for (const [id, p] of this.parts) {
-      if (p.def.type !== 'motor3') continue;
+      if (!isMotor(p.def.type)) continue;
       const ins = ['U1', 'V1', 'W1'].map((t) => this.nodeOf(key(id, t))).sort().join('|');
       if (ins === outs && new Set(outs.split('|')).size === 3) return id;
     }
@@ -842,7 +1009,9 @@ export class Circuit {
   }
 
   status(id: string): PartStatus {
-    const p = this.parts.get(id)!;
+    const p = this.parts.get(id);
+    // An unknown part (e.g. a check written for another circuit) has no state rather than crashing the page.
+    if (!p) return { id, type: 'resistor', label: id };
     const s: PartStatus = { id, type: p.def.type, label: p.def.label };
     switch (p.def.type) {
       case 'isolator3':
@@ -907,6 +1076,16 @@ export class Circuit {
       case 'di':
         s.inputs = Object.fromEntries(['I0', 'I1'].map((t) => [t, Math.abs(this.voltage(key(id, t), key(id, 'M')).dc) >= DI_ON_V]));
         break;
+      case 'timer':
+        s.energised = p.energised;
+        s.elapsedMs = p.elapsed;
+        s.done = p.done;
+        break;
+      case 'softstart':
+        s.energised = p.energised;
+        s.mode = p.ssFault ? 'FAULT: phase loss' : p.energised ? 'RUN' : 'OFF';
+        break;
+      case 'motor6':
       case 'motor3':
         s.motor = { ...p.motor, rpm: Math.round(p.motor.rpm), amps: Math.round(p.motor.amps * 10) / 10 };
         break;
@@ -930,6 +1109,15 @@ export class Circuit {
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
+
+function classifyPhase(p: Pot): PhaseName | null {
+  if (p.dc !== 0 || Math.hypot(p.re, p.im) < 150) return null;
+  for (const s of ['L1', 'L2', 'L3'] as PhaseName[]) {
+    const sp = SOURCE_POT[s];
+    if (Math.hypot(p.re - sp.re, p.im - sp.im) < 60) return s;
+  }
+  return null;
+}
 
 export function voltageBetween(pa: Pot | undefined, pb: Pot | undefined): { ac: number; dc: number; floating: boolean } {
   if (!pa || !pb) return { ac: 0, dc: 0, floating: true };

@@ -1,0 +1,412 @@
+{
+  "id": "m3-l2",
+  "moduleId": "m3",
+  "version": "1.0.0",
+  "title": "Nameplates, star and delta links, insulation testing",
+  "minutes": 60,
+  "summary": "Read a motor nameplate, fit the right links in the terminal box, measure winding resistance and insulation, and find motor faults.",
+  "requires": [
+    "m3-l1"
+  ],
+  "why": {
+    "text": "Pump **P-12** at the fictional Riverside plant has come back from the rewind shop. The fitter has left the terminal box open with the links in a bag. Before it can run, someone has to read the [[nameplate]], fit the links the right way, and prove the windings and insulation are healthy.\n\nGet the links wrong and the motor either runs weak and overheats, or burns out in minutes. Skip the insulation test and a damaged winding can put the motor frame at a dangerous voltage."
+  },
+  "learn": {
+    "cards": [
+      {
+        "title": "Six terminals, three windings",
+        "text": "A three-phase motor has three windings: **U**, **V** and **W**. Each winding has two ends, so the terminal box has six terminals: U1-U2, V1-V2, W1-W2.\n\nThe usual layout puts **U1 V1 W1** on the top row and **W2 U2 V2** on the bottom row. The bottom row is shifted on purpose, so the links fit neatly both ways."
+      },
+      {
+        "title": "Star and delta",
+        "text": "In [[star]] (Y) the three **2** ends are joined together (W2-U2-V2, links across the bottom row). Each winding gets the phase-to-neutral voltage: 400 V ÷ √3 ≈ 230 V.\n\nIn [[delta]] (Δ) each winding goes between two lines: U1-W2, V1-U2, W1-V2 (three upright links). Each winding gets the full 400 V.",
+        "circuit": "m3-links"
+      },
+      {
+        "title": "Reading the nameplate",
+        "text": "The [[nameplate]] gives two voltages, for example **230 V Δ / 400 V Y**. Each winding is rated **230 V**.\n\n- On a 400 V supply, a 230 V Δ / 400 V Y motor must be connected in **star**.\n- A **400 V Δ / 690 V Y** motor on a 400 V supply must be connected in **delta**. Only this kind can be started star-delta (lesson 4).\n\nThe nameplate also gives two currents (one for each connection), power, speed and power factor. Set the overload to the current that matches your connection."
+      },
+      {
+        "title": "What wrong links do",
+        "text": "Wrong links are a common and expensive mistake:\n- **Delta when it should be star**: each winding gets 400 V instead of 230 V. Current is far too high and the motor burns out quickly if protection does not trip.\n- **Star when it should be delta**: each winding gets only 58% of its voltage. The motor runs weak, draws more current under load than it should and overheats.\n- **A link missing**: only two windings work. The motor hums and will not start."
+      },
+      {
+        "title": "Winding resistance",
+        "text": "With the motor isolated and the links removed, measure each winding with the meter on Ω: U1-U2, V1-V2, W1-W2. The three readings should be **equal** (within a few percent). An open circuit (OL) means a broken winding; one low reading can mean shorted turns.\n\nSmall motors read a few ohms; large motors read fractions of an ohm, so you need a low-ohm meter for those."
+      },
+      {
+        "title": "Insulation resistance (IR) testing",
+        "text": "An ordinary multimeter uses a few volts, so it shows OL on almost any insulation, good or bad. An [[insulation resistance]] tester applies a high DC voltage, typically **500 V** for 400 V equipment, and shows megohms (MΩ).\n\n1. Isolate, lock off and **prove dead** first. An IR test on a live circuit is dangerous and wrecks the tester.\n2. Disconnect electronics (soft starters, drives, PSUs): 500 V can damage them.\n3. Test each winding to earth, and between windings with the links off.\n4. Let the tester discharge the winding before you touch it.\n\nYour site procedure sets the minimum value. A widely used minimum for low voltage motors is **1 MΩ**; a healthy motor usually reads far higher. Record the readings so you can see a falling trend over time."
+      }
+    ]
+  },
+  "show": {
+    "kind": "circuit",
+    "circuit": "m3-links",
+    "intro": "This motor is linked in star, which is correct for its nameplate on a 400 V supply. Work through the tasks. Note how the readings change when you isolate.",
+    "tasks": [
+      {
+        "id": "t1",
+        "text": "Switch **Q1 ON**. The motor starts and runs in star.",
+        "when": [
+          {
+            "part": "M1",
+            "motor": "running"
+          }
+        ]
+      },
+      {
+        "id": "t2",
+        "text": "Measure the voltage across one winding, **U1 to U2**, in V~. In star it is about 230 V.",
+        "measure": {
+          "a": "M1:U1",
+          "b": "M1:U2",
+          "mode": "VAC"
+        }
+      },
+      {
+        "id": "t3",
+        "text": "Now measure between two lines, **U1 to V1**, in V~. This is the full 400 V.",
+        "measure": {
+          "a": "M1:U1",
+          "b": "M1:V1",
+          "mode": "VAC"
+        }
+      },
+      {
+        "id": "t4",
+        "text": "Switch **Q1 OFF**, then switch **Q0 OFF** and fit your lock.",
+        "when": [
+          {
+            "part": "Q0",
+            "locked": true
+          }
+        ]
+      },
+      {
+        "id": "t5",
+        "text": "Select **IR 500 V** on the meter and test **U1 to PE**. A healthy motor reads hundreds of megohms.",
+        "when": [
+          {
+            "part": "Q0",
+            "locked": true
+          }
+        ],
+        "measure": {
+          "a": "M1:U1",
+          "b": "M1:PE",
+          "mode": "IR"
+        }
+      },
+      {
+        "id": "t6",
+        "text": "Select **Ω** and measure **U1 to V1**. With star links fitted you measure two windings in series, about 24 Ω.",
+        "when": [
+          {
+            "part": "Q0",
+            "locked": true
+          }
+        ],
+        "measure": {
+          "a": "M1:U1",
+          "b": "M1:V1",
+          "mode": "OHM"
+        }
+      }
+    ]
+  },
+  "build": {
+    "kind": "circuit",
+    "circuit": "m3-links",
+    "checks": [
+      {
+        "do": {
+          "kind": "switch",
+          "part": "Q1",
+          "on": true
+        }
+      },
+      {
+        "wait": 2500
+      },
+      {
+        "expect": {
+          "noShorts": true
+        },
+        "fail": "A protective device tripped when Q1 was switched on. Look for a link or wire joining two different phases."
+      },
+      {
+        "expect": {
+          "part": "M1",
+          "connection": "correct"
+        },
+        "fail": "The windings are not connected correctly for this supply. Read the nameplate: 230 V Δ / 400 V Y on a 400 V supply means STAR. Link W2, U2 and V2 together, and make sure all three windings are connected."
+      },
+      {
+        "expect": {
+          "part": "M1",
+          "motor": "running",
+          "direction": "forward"
+        },
+        "fail": "The motor does not run forward. Check that L1, L2 and L3 arrive at U1, V1 and W1 in that order, and that every winding is connected."
+      }
+    ],
+    "guided": {
+      "intro": "The links have been removed. The nameplate says **230 V Δ / 400 V Y** and the supply is 400 V. **Fit the correct links**, then the check switches Q1 on. In the simulator you can wire with power on; on a real motor you always isolate and prove dead first.",
+      "removeWires": [
+        "s1",
+        "s2"
+      ],
+      "hints": [
+        "230 V windings on a 400 V supply: each winding must get 230 V, so the connection is star.",
+        "In star the three 2-ends are joined: link W2 to U2, and U2 to V2.",
+        "Do not fit upright links (U1-W2 and so on). That is delta and would put 400 V on each 230 V winding."
+      ]
+    },
+    "unguided": {
+      "intro": "Now connect the motor cables **from Q1 to U1, V1, W1** and fit the links, with no hints. The motor must run forward.",
+      "removeWires": [
+        "m1",
+        "m2",
+        "m3",
+        "s1",
+        "s2"
+      ]
+    }
+  },
+  "break": {
+    "kind": "circuit",
+    "circuit": "m3-links",
+    "intro": "This motor has **one hidden fault**, or it may be healthy. Run it, then isolate (Q1 off, Q0 off and locked) and test it. Some faults only show up on the insulation tester. In this simulator you may measure voltage with the power on. On a real panel, live testing is only allowed when it is justified, by a competent person, following the site risk assessment and GS38. Never make an Ω or IR test until the motor is isolated.",
+    "symptomChecks": [
+      {
+        "do": {
+          "kind": "switch",
+          "part": "Q1",
+          "on": true
+        }
+      },
+      {
+        "wait": 2500
+      },
+      {
+        "expect": {
+          "noShorts": true
+        },
+        "fail": "A protective device tripped when Q1 was switched on. Look for a link or wire joining two different phases."
+      },
+      {
+        "expect": {
+          "part": "M1",
+          "connection": "correct"
+        },
+        "fail": "The windings are not connected correctly for this supply. Read the nameplate: 230 V Δ / 400 V Y on a 400 V supply means STAR. Link W2, U2 and V2 together, and make sure all three windings are connected."
+      },
+      {
+        "expect": {
+          "part": "M1",
+          "motor": "running",
+          "direction": "forward"
+        },
+        "fail": "The motor does not run forward. Check that L1, L2 and L3 arrive at U1, V1 and W1 in that order, and that every winding is connected."
+      },
+      {
+        "do": {
+          "kind": "switch",
+          "part": "Q1",
+          "on": false
+        }
+      },
+      {
+        "do": {
+          "kind": "switch",
+          "part": "Q0",
+          "on": false
+        }
+      },
+      {
+        "do": {
+          "kind": "lock",
+          "part": "Q0"
+        }
+      },
+      {
+        "expect": {
+          "insulation": [
+            "M1:U1",
+            "M1:PE"
+          ],
+          "minMOhm": 1
+        },
+        "fail": "Insulation resistance from the windings to earth is below 1 MΩ."
+      }
+    ],
+    "faults": [
+      {
+        "id": "lk-ir",
+        "kind": "insulation",
+        "part": "M1",
+        "megohms": 0.4,
+        "report": "Insulation resistance of the U winding to earth is low (below 1 MΩ). Do not energise; report it."
+      },
+      {
+        "id": "lk-wind",
+        "kind": "winding-open",
+        "part": "M1",
+        "winding": "V",
+        "report": "Winding V (V1-V2) is open circuit."
+      },
+      {
+        "id": "lk-link",
+        "kind": "wire-open",
+        "wire": "s2",
+        "report": "The star link between U2 and V2 is missing or loose."
+      },
+      {
+        "id": "lk-pole",
+        "kind": "contact-open",
+        "part": "Q1",
+        "a": "5",
+        "b": "6",
+        "report": "Q1 pole 5-6 is open: no L3 at W1."
+      }
+    ],
+    "parMeasurements": 6,
+    "parSeconds": 420,
+    "extraReports": [
+      "Nothing is wrong: the motor is healthy."
+    ]
+  },
+  "prove": {
+    "passMark": 0.8,
+    "questions": [
+      {
+        "id": "q1",
+        "text": "A motor nameplate says 230 V Δ / 400 V Y. The supply is 400 V three-phase. How must it be connected?",
+        "options": [
+          "Star",
+          "Delta",
+          "Either, it does not matter",
+          "It cannot be used on 400 V"
+        ],
+        "answer": 0,
+        "explain": "Each winding is rated 230 V. In star each winding gets 400 ÷ √3 ≈ 230 V. Delta would put 400 V on each winding and burn it out.",
+        "critical": true
+      },
+      {
+        "id": "q2",
+        "text": "Which motor can be started star-delta on a 400 V supply?",
+        "options": [
+          "400 V Δ / 690 V Y",
+          "230 V Δ / 400 V Y",
+          "Any three-phase motor",
+          "Only single-phase motors"
+        ],
+        "answer": 0,
+        "explain": "Star-delta runs the motor in delta, so the windings must be rated for 400 V in delta."
+      },
+      {
+        "id": "q3",
+        "text": "With the standard terminal layout (U1 V1 W1 above W2 U2 V2), what do delta links look like?",
+        "options": [
+          "Three upright links: U1-W2, V1-U2, W1-V2",
+          "Two links across the bottom row",
+          "One link from U1 to V1",
+          "No links are needed"
+        ],
+        "answer": 0,
+        "explain": "Delta joins the end of each winding to the start of the next. The shifted bottom row makes these three links upright."
+      },
+      {
+        "id": "q4",
+        "text": "Before an insulation resistance test on a motor, what must you do first?",
+        "options": [
+          "Isolate, lock off and prove dead",
+          "Run the motor to warm it up",
+          "Switch the meter to V~",
+          "Nothing: the tester is low voltage"
+        ],
+        "answer": 0,
+        "explain": "An IR tester puts 500 V DC on the circuit. Testing a live circuit is dangerous and damages the tester. Isolate, lock off and prove dead first.",
+        "critical": true
+      },
+      {
+        "id": "q5",
+        "text": "Your multimeter on Ω reads OL from U1 to the motor frame. Does that prove the insulation is good?",
+        "options": [
+          "No. A multimeter uses a few volts; you need an insulation tester at the right test voltage",
+          "Yes, OL means infinite resistance",
+          "Yes, if the meter is true-RMS",
+          "Only if the motor is warm"
+        ],
+        "answer": 0,
+        "explain": "Insulation that breaks down at hundreds of volts can still read OL at a few volts. Use an insulation resistance tester."
+      },
+      {
+        "id": "q6",
+        "text": "Why disconnect a soft starter or drive before an insulation test on the motor circuit?",
+        "options": [
+          "500 V DC from the tester can damage the electronics",
+          "The tester will read zero",
+          "It is not needed",
+          "So the motor runs faster"
+        ],
+        "answer": 0,
+        "explain": "Electronic equipment is not built to take the IR test voltage. Follow the maker's instructions and test the motor and cable with it disconnected."
+      },
+      {
+        "id": "q7",
+        "text": "Winding resistances read U1-U2 4.1 Ω, V1-V2 4.0 Ω, W1-W2 OL. What does this mean?",
+        "options": [
+          "The W winding is open circuit",
+          "The motor is healthy",
+          "The links are in star",
+          "The insulation is low"
+        ],
+        "answer": 0,
+        "explain": "The three windings should read about the same. OL on one means that winding is broken."
+      },
+      {
+        "id": "q8",
+        "text": "A 400 V Δ / 690 V Y motor is wrongly linked in star on a 400 V supply. What happens?",
+        "options": [
+          "Each winding gets only 58% of its voltage: the motor is weak and overheats under load",
+          "The motor burns out instantly",
+          "It runs normally",
+          "It runs backwards"
+        ],
+        "answer": 0,
+        "explain": "In star each winding gets 230 V instead of 400 V. Torque falls to about a third, and under load the current rises and the motor overheats."
+      }
+    ]
+  },
+  "apply": {
+    "intro": "Do this on the training bench while your trainer watches. Your trainer signs it off. An app score alone never makes anyone competent or authorised.",
+    "items": [
+      {
+        "id": "a1",
+        "text": "Carries out safe isolation of the motor circuit before opening the terminal box."
+      },
+      {
+        "id": "a2",
+        "text": "Reads and records the nameplate (voltages, currents, power, speed) and states the correct connection for the supply."
+      },
+      {
+        "id": "a3",
+        "text": "With links removed, measures and records the three winding resistances and compares them."
+      },
+      {
+        "id": "a4",
+        "text": "Carries out insulation resistance tests (each winding to earth, and between windings) at the correct test voltage, records the results against the site minimum, and discharges the windings."
+      },
+      {
+        "id": "a5",
+        "text": "Fits the links for the correct connection, tightens terminals to the maker's torque, and fits the terminal box cover."
+      },
+      {
+        "id": "a6",
+        "text": "With the trainer, removes isolation by the procedure, runs the motor and checks direction and running current."
+      }
+    ]
+  }
+}

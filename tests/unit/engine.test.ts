@@ -58,8 +58,10 @@ describe('DOL starter simulation', () => {
     expect(c.status('M1').motor).toMatchObject({ state: 'running', direction: 'forward', rpm: 1430 });
     expect(c.status('H1').lit).toBe(true);
     c.command({ kind: 'press', part: 'S1' });
+    run(c, 200); // the contactor takes a few ms to release
     expect(c.status('KM1').energised).toBe(false);
     c.command({ kind: 'release', part: 'S1' });
+    run(c, 100);
     expect(c.status('KM1').energised).toBe(false); // does not restart
     run(c, 10_000);
     expect(c.status('M1').motor?.state).toBe('stopped');
@@ -79,6 +81,7 @@ describe('DOL starter simulation', () => {
     const c = new Circuit(dol);
     start(c);
     c.removeWire('c6'); // S1-12 to S2-13 broken
+    run(c, 100);
     expect(c.status('KM1').energised).toBe(false);
   });
 
@@ -86,6 +89,7 @@ describe('DOL starter simulation', () => {
     const c = new Circuit(dol);
     start(c);
     c.command({ kind: 'trip-test', part: 'F2' });
+    run(c, 100);
     expect(c.status('KM1').energised).toBe(false);
     expect(c.status('H2').lit).toBe(true);
     c.command({ kind: 'reset', part: 'F2' });

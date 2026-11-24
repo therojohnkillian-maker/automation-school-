@@ -4,7 +4,7 @@ import { lessonById, moduleById } from '../../content';
 import type { Question } from '../../content/types';
 import { useSession } from '../../app/session';
 import { Notice, useAction } from '../../components/ui';
-import { allProgress, lessonStatus, placeOut, recordAttempt } from '../../data/progress';
+import { allProgress, appPassed, placeOut, recordAttempt } from '../../data/progress';
 import { makeRng, newSeed } from '../../engines/core/rng';
 import { quizResult } from './scoring';
 
@@ -26,7 +26,11 @@ export function Placement() {
 
   useEffect(() => {
     if (!mod) return;
-    void allProgress(profile.id).then((all) => setLocked(mod.lessons.some((id) => lessonStatus(id, all) === 'locked')));
+    // Only prerequisites from other modules (M0 safety) lock the test. Lessons that depend on earlier lessons
+    // of this same module are covered by the test itself.
+    void allProgress(profile.id).then((all) =>
+      setLocked(mod.lessons.some((id) => (lessonById(id)?.requires ?? []).some((r) => !mod.lessons.includes(r) && !appPassed(all.find((x) => x.lessonId === r)?.steps)))),
+    );
   }, [mod, profile.id]);
 
   const quiz = useMemo(() => {
@@ -35,7 +39,8 @@ export function Placement() {
     const rng = makeRng(seed);
     // Always include every critical question, then fill with others.
     const crit = pool.filter((q) => q.critical);
-    const rest = rng.shuffle(pool.filter((q) => !q.critical)).slice(0, Math.max(0, COUNT - crit.length));
+    // Modules with many critical questions still get some general ones: at least 4.
+    const rest = rng.shuffle(pool.filter((q) => !q.critical)).slice(0, Math.max(4, COUNT - crit.length));
     return rng.shuffle([...crit, ...rest]).map((q) => ({ q, order: rng.shuffle(q.options.map((_, i) => i)) }));
   }, [mod, seed]);
 

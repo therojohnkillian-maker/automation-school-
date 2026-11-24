@@ -20,7 +20,12 @@ const expectation = z.union([
   z.object({ part: z.string(), lit: z.boolean() }).strict(),
   z.object({ part: z.string(), psuOn: z.boolean() }).strict(),
   z.object({ part: z.string(), pressed: z.boolean() }).strict(),
-  z.object({ part: z.string(), motor: z.enum(['running', 'stopped-or-coasting', 'not-powered']), direction: z.enum(['forward', 'reverse']).optional() }).strict(),
+  z.object({ part: z.string(), motor: z.enum(['running', 'starting', 'stopped-or-coasting', 'not-powered']), direction: z.enum(['forward', 'reverse']).optional() }).strict(),
+  z.object({ part: z.string(), locked: z.boolean() }).strict(),
+  z.object({ part: z.string(), timerDone: z.boolean() }).strict(),
+  z.object({ part: z.string(), connection: z.enum(['correct', 'low', 'high']) }).strict(),
+  z.object({ part: z.string(), ampsBelow: z.number().positive() }).strict(),
+  z.object({ insulation: z.tuple([z.string(), z.string()]), minMOhm: z.number().positive() }).strict(),
   z.object({ part: z.string(), feedsMotor: z.string() }).strict(),
   z.object({ connected: z.tuple([z.string(), z.string()]) }).strict(),
   z.object({ part: z.string(), input: z.string(), on: z.boolean() }).strict(),
@@ -36,6 +41,7 @@ const checkStep = z.union([
   z.object({ do: command }).strict(),
   z.object({ wait: z.number().int().positive() }).strict(),
   z.object({ expect: expectation, fail: z.string().min(10) }).strict(),
+  z.object({ watchNotBoth: z.tuple([z.string(), z.string()]), fail: z.string().min(10) }).strict(),
 ]);
 
 const fault = z.discriminatedUnion('kind', [
@@ -51,6 +57,8 @@ const fault = z.discriminatedUnion('kind', [
   z.object({ id: z.string(), kind: z.literal('config'), part: z.string(), rangeLo: z.number(), rangeHi: z.number(), report: z.string() }),
   z.object({ id: z.string(), kind: z.literal('labels-swapped'), parts: z.tuple([z.string(), z.string()]), report: z.string() }),
   z.object({ id: z.string(), kind: z.literal('tester-faulty'), report: z.string() }),
+  z.object({ id: z.string(), kind: z.literal('insulation'), part: z.string(), megohms: z.number().positive(), report: z.string() }),
+  z.object({ id: z.string(), kind: z.literal('winding-open'), part: z.string(), winding: z.enum(['U', 'V', 'W']), report: z.string() }),
 ]);
 
 const scenario = z.object({ circuit: z.string(), target: z.string(), jobTag: z.string(), points: z.array(z.string()).min(2) });
@@ -78,7 +86,7 @@ const measureTask = z.object({
   text: z.string(),
   a: z.string(),
   b: z.string(),
-  mode: z.enum(['VAC', 'VDC', 'OHM']),
+  mode: z.enum(['VAC', 'VDC', 'OHM', 'IR']),
   setup: z.array(command).default([]),
   unit: z.string(),
   tolerancePct: z.number().positive().default(5),
@@ -114,7 +122,7 @@ export const lessonSchema = z.object({
           id: z.string(),
           text: z.string(),
           when: z.array(expectation).optional(),
-          measure: z.object({ a: z.string(), b: z.string(), mode: z.enum(['VAC', 'VDC', 'OHM']) }).optional(),
+          measure: z.object({ a: z.string(), b: z.string(), mode: z.enum(['VAC', 'VDC', 'OHM', 'IR']) }).optional(),
         }),
       ).min(1),
     }),
@@ -185,8 +193,13 @@ export const templateSchema = z.object({
         text: z.string(),
         setup: z.array(command).default([]),
         part: z.string(),
-        field: z.enum(['mA', 'eng', 'lit', 'energised']),
+        field: z.enum(['mA', 'eng', 'lit', 'energised', 'amps', 'rpm', 'vac']),
         unit: z.string(),
+        /** Simulated time to let pass after the setup, ms (motors need time to start). */
+        wait: z.number().int().nonnegative().default(0),
+        /** For 'vac': the two points measured. */
+        a: z.string().optional(),
+        b: z.string().optional(),
       }),
     )
     .min(3),
@@ -194,6 +207,10 @@ export const templateSchema = z.object({
   faultChecks: z.array(checkStep).min(1),
   extraReports: z.array(z.string()).default([]),
   modelAnswer: z.string(),
+  /** Instructions above the working schematic. */
+  schematicIntro: z.string().default('The working circuit. Operate it and watch the event log.'),
+  /** Instructions above the test sheet. */
+  testIntro: z.string().default('Do the tests on the live circuit, then record what you see, as you would on a real test sheet.'),
 });
 
 export type Template = z.infer<typeof templateSchema>;

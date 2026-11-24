@@ -1,0 +1,320 @@
+{
+  "id": "t3-star-delta",
+  "number": 3,
+  "moduleId": "m3",
+  "version": "1.0.0",
+  "title": "Star-delta fan",
+  "summary": "Extract fan EF-2: 5.5 kW star-delta starter with timer, interlocks and an overload in the winding circuit.",
+  "circuit": "m3-star-delta",
+  "brief": "**Client:** Riverside bottling plant (fictional).\n**Equipment:** extract fan **EF-2**, 5.5 kW, **400 V Δ / 690 V Y**, FLC 10.7 A.\n\nThe site electrical engineer will not allow a DOL start on this board because of voltage dip.\n\n**Scope**\n- Main **KM1**, star **KM2**, delta **KM3**; star/delta electrically and mechanically interlocked.\n- On-delay timer **KT** set so the fan is near full speed at changeover (start at 4 s, adjust on test).\n- Overload **F2** in the winding circuit, set to 0.58 × FLC.\n- Six-core motor cable (two sets), PE.\n\n**Deliverables:** wired and tested starter, star current and changeover recorded.",
+  "ioList": [
+    {
+      "tag": "S0",
+      "description": "STOP",
+      "type": "NC 11-12",
+      "range": "—",
+      "connection": "G1 + to S0, then F2 95-96"
+    },
+    {
+      "tag": "S1",
+      "description": "START",
+      "type": "NO 13-14",
+      "range": "—",
+      "connection": "Parallel with KM1 13-14"
+    },
+    {
+      "tag": "KM1",
+      "description": "Main contactor",
+      "type": "3 poles + 13-14 NO",
+      "range": "AC-3, rated ≥ 0.58 × FLC",
+      "connection": "L1 L2 L3 to F2, then U1 V1 W1"
+    },
+    {
+      "tag": "KM2",
+      "description": "Star contactor",
+      "type": "3 poles + 21-22 NC",
+      "range": "AC-3, rated ≥ 0.33 × FLC",
+      "connection": "Joins W2 U2 V2"
+    },
+    {
+      "tag": "KM3",
+      "description": "Delta contactor",
+      "type": "3 poles + 21-22 NC",
+      "range": "AC-3, rated ≥ 0.58 × FLC",
+      "connection": "L1 to W2, L2 to U2, L3 to V2"
+    },
+    {
+      "tag": "KT",
+      "description": "On-delay timer",
+      "type": "15-16 delayed NC, 17-18 delayed NO",
+      "range": "Set 4 s",
+      "connection": "Coil from S1:14"
+    },
+    {
+      "tag": "F2",
+      "description": "Overload relay",
+      "type": "95-96 NC",
+      "range": "Set 6.2 A (0.58 × FLC)",
+      "connection": "Between KM1 and U1 V1 W1"
+    },
+    {
+      "tag": "M1",
+      "description": "Fan motor",
+      "type": "3-phase, 6 terminals, no links",
+      "range": "5.5 kW, 10.7 A, 1450 rpm",
+      "connection": "U1 V1 W1 and W2 U2 V2, PE"
+    }
+  ],
+  "logic": [
+    {
+      "function": "Start (star)",
+      "condition": "START pressed, no trip",
+      "action": "KM1, KT and KM2 in: motor in star"
+    },
+    {
+      "function": "Changeover",
+      "condition": "KT time elapsed",
+      "action": "15-16 opens: KM2 out; then 17-18 and KM2 21-22 let KM3 in"
+    },
+    {
+      "function": "Run (delta)",
+      "condition": "KM1 + KM3 in",
+      "action": "Motor in delta at full torque"
+    },
+    {
+      "function": "Interlock",
+      "condition": "KM2 or KM3 in",
+      "action": "Its 21-22 blocks the other"
+    },
+    {
+      "function": "Stop / trip",
+      "condition": "S0 or F2",
+      "action": "All contactors and KT de-energised"
+    }
+  ],
+  "schedule": [
+    {
+      "step": "Isolation, lock off, prove dead at all six motor terminals",
+      "who": "Technician",
+      "hours": 0.5
+    },
+    {
+      "step": "Check nameplate is 400 V Δ; remove terminal box links",
+      "who": "Technician",
+      "hours": 0.25
+    },
+    {
+      "step": "Mount contactors (KM2/KM3 mechanical interlock), KT, F2",
+      "who": "Technician",
+      "hours": 1.5
+    },
+    {
+      "step": "Wire power circuit: main, delta, star point, six motor cores",
+      "who": "Technician",
+      "hours": 2.5
+    },
+    {
+      "step": "Wire control circuit, timer and interlocks",
+      "who": "Technician",
+      "hours": 2
+    },
+    {
+      "step": "Dead tests on both cable sets; record",
+      "who": "Technician",
+      "hours": 1
+    },
+    {
+      "step": "Set F2 and KT; functional test with clamp meter",
+      "who": "Technician + supervisor",
+      "hours": 1
+    }
+  ],
+  "testIntro": "Run the starter and record each result. Start each row from rest: press STOP and let the fan stop first.",
+  "testSheet": [
+    {
+      "id": "r1",
+      "text": "Press START. Motor current 1 s later (in star)",
+      "setup": [
+        {
+          "kind": "press",
+          "part": "S1"
+        },
+        {
+          "kind": "release",
+          "part": "S1"
+        }
+      ],
+      "wait": 1000,
+      "part": "M1",
+      "field": "amps",
+      "unit": "A"
+    },
+    {
+      "id": "r2",
+      "text": "In star, voltage across one winding U1 to U2",
+      "setup": [
+        {
+          "kind": "press",
+          "part": "S1"
+        },
+        {
+          "kind": "release",
+          "part": "S1"
+        }
+      ],
+      "wait": 1000,
+      "part": "M1",
+      "field": "vac",
+      "a": "M1:U1",
+      "b": "M1:U2",
+      "unit": "V"
+    },
+    {
+      "id": "r3",
+      "text": "After changeover, is KM2 (star) energised?",
+      "setup": [
+        {
+          "kind": "press",
+          "part": "S1"
+        },
+        {
+          "kind": "release",
+          "part": "S1"
+        }
+      ],
+      "wait": 5000,
+      "part": "KM2",
+      "field": "energised",
+      "unit": ""
+    },
+    {
+      "id": "r4",
+      "text": "After changeover, voltage across one winding U1 to U2",
+      "setup": [
+        {
+          "kind": "press",
+          "part": "S1"
+        },
+        {
+          "kind": "release",
+          "part": "S1"
+        }
+      ],
+      "wait": 5000,
+      "part": "M1",
+      "field": "vac",
+      "a": "M1:U1",
+      "b": "M1:U2",
+      "unit": "V"
+    },
+    {
+      "id": "r5",
+      "text": "Running in delta: motor line current",
+      "setup": [
+        {
+          "kind": "press",
+          "part": "S1"
+        },
+        {
+          "kind": "release",
+          "part": "S1"
+        }
+      ],
+      "wait": 5000,
+      "part": "M1",
+      "field": "amps",
+      "unit": "A"
+    }
+  ],
+  "faults": [
+    {
+      "id": "t3-star",
+      "kind": "wire-open",
+      "wire": "y5",
+      "report": "The star-point link KM2 4 to KM2 6 is broken: the star is incomplete."
+    },
+    {
+      "id": "t3-timer",
+      "kind": "wire-open",
+      "wire": "c19",
+      "report": "The timer KT has lost its 0 V (A2) wire: it never times out and the fan stays in star."
+    },
+    {
+      "id": "t3-pole",
+      "kind": "contact-open",
+      "part": "KM1",
+      "a": "1",
+      "b": "2",
+      "report": "Main contactor KM1 pole 1-2 is open: no L1 to U1."
+    },
+    {
+      "id": "t3-coil",
+      "kind": "coil-open",
+      "part": "KM3",
+      "report": "The KM3 (delta) coil is open circuit."
+    }
+  ],
+  "faultChecks": [
+    {
+      "watchNotBoth": [
+        "KM2",
+        "KM3"
+      ],
+      "fail": "Star and delta were in together."
+    },
+    {
+      "do": {
+        "kind": "press",
+        "part": "S1"
+      }
+    },
+    {
+      "wait": 100
+    },
+    {
+      "do": {
+        "kind": "release",
+        "part": "S1"
+      }
+    },
+    {
+      "wait": 200
+    },
+    {
+      "expect": {
+        "part": "M1",
+        "connection": "low"
+      },
+      "fail": "The motor is not in star at start."
+    },
+    {
+      "wait": 4500
+    },
+    {
+      "expect": {
+        "part": "KM3",
+        "energised": true
+      },
+      "fail": "Delta did not come in."
+    },
+    {
+      "expect": {
+        "part": "M1",
+        "motor": "running"
+      },
+      "fail": "The fan is not running after changeover."
+    },
+    {
+      "expect": {
+        "part": "M1",
+        "connection": "correct"
+      },
+      "fail": "The windings are not in delta after changeover."
+    }
+  ],
+  "extraReports": [
+    "Nothing is wrong: the starter works as specified."
+  ],
+  "modelAnswer": "**Test sheet:** star current about **21.5 A** at start (2 × FLC in this model: one third of the 6 × FLC a DOL start would draw). Winding voltage in star **231 V**. After changeover KM2 is **out**, the winding voltage is **400 V** and the line current is **10.7 A**. F2 carries 6.2 A, under its 6.2 A setting.\n\n**Fault notes:** a fan that hums at start and then runs after changeover has a star-circuit fault (KM2 or the star point). A fan that starts and then stops at changeover has a delta-circuit fault (KT 17-18, KM2 21-22, KM3 coil). A fan that stays in star and trips after half a minute has a timer fault.",
+  "schematicIntro": "The working starter. Press START and watch star, the timer and the changeover to delta in the event log and the motor current."
+}

@@ -20,7 +20,10 @@ export type PartType =
   | 'trip'
   | 'prox_pnp'
   | 'prox_npn'
-  | 'di';
+  | 'di'
+  | 'motor6'
+  | 'timer'
+  | 'softstart';
 
 export interface PartJson {
   id: string;
@@ -57,6 +60,15 @@ export interface PartJson {
     hyst?: number;
     /** Minimum voltage a loop-powered transmitter needs across its terminals. */
     minVolts?: number;
+    /** Rated voltage of one motor winding: 400 for a 400 V Δ / 690 V Y motor, 230 for a 230 V Δ / 400 V Y motor. */
+    windingVolts?: number;
+    /** Motor insulation resistance to earth, in megohms (healthy default 500). */
+    insulationMOhm?: number;
+    /** On-delay timer preset, ms. */
+    delayMs?: number;
+    /** Soft starter current limit (× motor full-load current) and ramp time, ms. */
+    currentLimit?: number;
+    rampMs?: number;
   };
   init?: { on?: boolean; tripped?: boolean; value?: number };
 }
@@ -80,6 +92,8 @@ export interface CircuitJson {
   wires: WireJson[];
   /** Free text drawn on the canvas, e.g. "Power circuit". */
   notes?: { at: [number, number]; text: string }[];
+  /** Offer the 500 V insulation tester range on the meter for this circuit. */
+  irTester?: boolean;
 }
 
 export type FaultJson =
@@ -93,6 +107,8 @@ export type FaultJson =
   | { id: string; kind: 'extra-wire'; a: string; b: string; report: string }
   | { id: string; kind: 'tx-failed'; part: string; report: string }
   | { id: string; kind: 'config'; part: string; rangeLo: number; rangeHi: number; report: string }
+  | { id: string; kind: 'insulation'; part: string; megohms: number; report: string }
+  | { id: string; kind: 'winding-open'; part: string; winding: 'U' | 'V' | 'W'; report: string }
   | { id: string; kind: 'labels-swapped'; parts: [string, string]; report: string }
   | { id: string; kind: 'tester-faulty'; report: string };
 
@@ -121,7 +137,7 @@ export interface PartStatus {
   lit?: boolean;
   psuOn?: boolean;
   burnt?: boolean;
-  motor?: { state: MotorState; rpm: number; amps: number; direction: 'forward' | 'reverse' | null };
+  motor?: { state: MotorState; rpm: number; amps: number; direction: 'forward' | 'reverse' | null; connection?: 'correct' | 'low' | 'high' | null };
   thermalPct?: number;
   /** Process value (transmitters) or target present 0/1 (proximity sensors). */
   value?: number;
@@ -139,6 +155,11 @@ export interface PartStatus {
   relays?: { hi: boolean; lo: boolean };
   /** Sensor output switched / LED on. */
   output?: boolean;
+  /** Timer: elapsed time and whether the delay has run out. */
+  elapsedMs?: number;
+  done?: boolean;
+  /** Soft starter state text. */
+  mode?: string;
 }
 
 export interface LogEntry {

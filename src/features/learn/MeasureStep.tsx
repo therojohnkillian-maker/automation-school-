@@ -11,7 +11,7 @@ import { useSim } from './useSim';
 import type { StepProps } from './stepTypes';
 
 type BuildM = Extract<Lesson['build'], { kind: 'measure' }>;
-const MODE_LABEL = { VAC: 'V~', VDC: 'V=', OHM: 'Ω' } as const;
+const MODE_LABEL = { VAC: 'V~', VDC: 'V=', OHM: 'Ω', IR: 'MΩ (IR 500 V)' } as const;
 
 /** The value the simulator gives for a task, after its setup, starting from the circuit as drawn. */
 export function expectedFor(circuitId: string, task: MeasureTask): number | null {
@@ -47,7 +47,7 @@ export function BuildMeasureStep({ lesson, progress, done, record }: StepProps) 
     const next = placeProbe(probes, ref);
     setProbes(next);
     if (next.red && next.black && measure(sim.circuit, next.red, next.black, next.mode).unsafe) {
-      setWarn('Safety: you tried a resistance (Ω) test on a live circuit. Switch off F1 first. On a real panel, isolate and prove dead.');
+      setWarn(next.mode === 'IR' ? 'Safety: you tried a 500 V insulation test on a live circuit. Isolate, lock off and prove dead first. A live IR test can damage the tester and the equipment.' : 'Safety: you tried a resistance (Ω) test on a live circuit. Switch off F1 first. On a real panel, isolate and prove dead.');
     }
   };
 

@@ -1,0 +1,337 @@
+{
+  "id": "t1-dol",
+  "number": 1,
+  "moduleId": "m3",
+  "version": "1.0.0",
+  "title": "DOL motor with start/stop",
+  "summary": "Conveyor CV-3: a 2.2 kW motor on a direct-on-line starter with 24 V DC control, RUN and TRIP lamps.",
+  "circuit": "dol-starter",
+  "brief": "**Client:** Riverside bottling plant (fictional).\n**Equipment:** crate conveyor **CV-3**, 2.2 kW 4-pole motor, 400 V, nameplate FLC 4.6 A.\n\nThe line supervisor wants a local start/stop station at the conveyor and lamps on the panel door.\n\n**Scope**\n- Motor circuit breaker **Q1**, contactor **KM1**, overload relay **F2** set to nameplate FLC.\n- 24 V DC control from **G1**, protected by MCB **F1**, fed from after Q1.\n- STOP (NC) and START (NO) push buttons, holding contact, RUN lamp **H1**, TRIP lamp **H2**.\n- No automatic restart after an overload reset or a power cut.\n\n**Deliverables:** wired and tested starter, completed test sheet, marked-up drawing.",
+  "ioList": [
+    {
+      "tag": "S1",
+      "description": "STOP push button",
+      "type": "NC contact 11-12",
+      "range": "—",
+      "connection": "G1 + to S1:11, S1:12 to S2:13"
+    },
+    {
+      "tag": "S2",
+      "description": "START push button",
+      "type": "NO contact 13-14",
+      "range": "—",
+      "connection": "In parallel with KM1 13-14"
+    },
+    {
+      "tag": "KM1",
+      "description": "Main contactor",
+      "type": "3 main poles, aux 13-14 and 43-44 NO, 21-22 NC; 24 V DC coil",
+      "range": "AC-3, 2.2 kW",
+      "connection": "Coil A1 from F2:96, A2 to G1 −"
+    },
+    {
+      "tag": "F2",
+      "description": "Thermal overload relay",
+      "type": "95-96 NC, 97-98 NO",
+      "range": "Set 4.6 A",
+      "connection": "95-96 in series with KM1 coil; 97-98 lights H2"
+    },
+    {
+      "tag": "H1",
+      "description": "RUN lamp",
+      "type": "24 V DC",
+      "range": "—",
+      "connection": "Through KM1 43-44"
+    },
+    {
+      "tag": "H2",
+      "description": "TRIP lamp",
+      "type": "24 V DC",
+      "range": "—",
+      "connection": "Through F2 97-98"
+    },
+    {
+      "tag": "M1",
+      "description": "Conveyor motor",
+      "type": "3-phase induction, 4-pole",
+      "range": "2.2 kW, 4.6 A, 1430 rpm",
+      "connection": "U1 V1 W1 from F2 2/4/6, PE to earth bar"
+    }
+  ],
+  "logic": [
+    {
+      "function": "Start",
+      "condition": "START pressed, STOP not pressed, F2 not tripped",
+      "action": "KM1 pulls in, motor runs, H1 lights"
+    },
+    {
+      "function": "Hold",
+      "condition": "START released",
+      "action": "KM1 13-14 keeps the coil energised"
+    },
+    {
+      "function": "Stop",
+      "condition": "STOP pressed",
+      "action": "KM1 drops out, motor coasts to rest, H1 off"
+    },
+    {
+      "function": "Overload",
+      "condition": "F2 trips",
+      "action": "95-96 opens: KM1 drops out. 97-98 closes: H2 lights"
+    },
+    {
+      "function": "No restart",
+      "condition": "F2 reset or supply returns",
+      "action": "Motor stays off until START is pressed again"
+    }
+  ],
+  "schedule": [
+    {
+      "step": "Isolation, lock off and prove dead at the supply",
+      "who": "Technician",
+      "hours": 0.5
+    },
+    {
+      "step": "Mount Q1, KM1, F2, F1, G1 on DIN rail; fit door devices",
+      "who": "Technician",
+      "hours": 1.5
+    },
+    {
+      "step": "Wire power circuit and motor cable; terminate PE",
+      "who": "Technician",
+      "hours": 1.5
+    },
+    {
+      "step": "Wire 24 V control circuit and lamps; ferrules and labels",
+      "who": "Technician",
+      "hours": 1.5
+    },
+    {
+      "step": "Dead tests: continuity, insulation resistance, polarity; record",
+      "who": "Technician",
+      "hours": 1
+    },
+    {
+      "step": "Set F2 to 4.6 A; energise; functional test with supervisor",
+      "who": "Technician + supervisor",
+      "hours": 0.5
+    },
+    {
+      "step": "Mark up drawing, complete test sheet, hand over",
+      "who": "Technician",
+      "hours": 0.5
+    }
+  ],
+  "testIntro": "Run the starter and record each result, as you would on a real test sheet. Start each row from the state it describes (press STOP or reset F2 first where needed).",
+  "testSheet": [
+    {
+      "id": "r1",
+      "text": "Press and release START. Is KM1 energised?",
+      "setup": [
+        {
+          "kind": "press",
+          "part": "S2"
+        },
+        {
+          "kind": "release",
+          "part": "S2"
+        }
+      ],
+      "part": "KM1",
+      "field": "energised",
+      "unit": ""
+    },
+    {
+      "id": "r2",
+      "text": "Motor running current once up to speed",
+      "setup": [
+        {
+          "kind": "press",
+          "part": "S2"
+        },
+        {
+          "kind": "release",
+          "part": "S2"
+        }
+      ],
+      "wait": 3000,
+      "part": "M1",
+      "field": "amps",
+      "unit": "A"
+    },
+    {
+      "id": "r3",
+      "text": "Motor speed once up to speed",
+      "setup": [
+        {
+          "kind": "press",
+          "part": "S2"
+        },
+        {
+          "kind": "release",
+          "part": "S2"
+        }
+      ],
+      "wait": 3000,
+      "part": "M1",
+      "field": "rpm",
+      "unit": "rpm"
+    },
+    {
+      "id": "r4",
+      "text": "Voltage at the motor, U1 to V1, while running",
+      "setup": [
+        {
+          "kind": "press",
+          "part": "S2"
+        },
+        {
+          "kind": "release",
+          "part": "S2"
+        }
+      ],
+      "wait": 3000,
+      "part": "M1",
+      "field": "vac",
+      "a": "M1:U1",
+      "b": "M1:V1",
+      "unit": "V"
+    },
+    {
+      "id": "r5",
+      "text": "Run the motor, then press TEST on F2. Is TRIP lamp H2 lit?",
+      "setup": [
+        {
+          "kind": "press",
+          "part": "S2"
+        },
+        {
+          "kind": "release",
+          "part": "S2"
+        },
+        {
+          "kind": "trip-test",
+          "part": "F2"
+        }
+      ],
+      "part": "H2",
+      "field": "lit",
+      "unit": ""
+    },
+    {
+      "id": "r6",
+      "text": "Then press RESET on F2. Is KM1 energised (did it restart by itself)?",
+      "setup": [
+        {
+          "kind": "press",
+          "part": "S2"
+        },
+        {
+          "kind": "release",
+          "part": "S2"
+        },
+        {
+          "kind": "trip-test",
+          "part": "F2"
+        },
+        {
+          "kind": "reset",
+          "part": "F2"
+        }
+      ],
+      "part": "KM1",
+      "field": "energised",
+      "unit": ""
+    }
+  ],
+  "faults": [
+    {
+      "id": "t1-run",
+      "kind": "wire-open",
+      "wire": "c13",
+      "report": "The wire from KM1 44 to RUN lamp H1 is broken: the motor runs but H1 stays off."
+    },
+    {
+      "id": "t1-pole",
+      "kind": "contact-open",
+      "part": "KM1",
+      "a": "3",
+      "b": "4",
+      "report": "KM1 main pole 3-4 is open: the motor gets two phases and stalls."
+    },
+    {
+      "id": "t1-start",
+      "kind": "wire-open",
+      "wire": "c8",
+      "report": "The wire from S2 terminal 14 to KM1 terminal 14 is broken: START works only while held."
+    },
+    {
+      "id": "t1-trip",
+      "kind": "load-open",
+      "part": "H2",
+      "report": "TRIP lamp H2 has failed (open filament or LED)."
+    }
+  ],
+  "faultChecks": [
+    {
+      "do": {
+        "kind": "press",
+        "part": "S2"
+      }
+    },
+    {
+      "wait": 100
+    },
+    {
+      "do": {
+        "kind": "release",
+        "part": "S2"
+      }
+    },
+    {
+      "wait": 2000
+    },
+    {
+      "expect": {
+        "part": "KM1",
+        "energised": true
+      },
+      "fail": "KM1 does not stay in after START."
+    },
+    {
+      "expect": {
+        "part": "M1",
+        "motor": "running"
+      },
+      "fail": "The motor is not running."
+    },
+    {
+      "expect": {
+        "part": "H1",
+        "lit": true
+      },
+      "fail": "RUN lamp H1 is off while running."
+    },
+    {
+      "do": {
+        "kind": "trip-test",
+        "part": "F2"
+      }
+    },
+    {
+      "wait": 100
+    },
+    {
+      "expect": {
+        "part": "H2",
+        "lit": true
+      },
+      "fail": "TRIP lamp H2 is off after an overload trip."
+    }
+  ],
+  "extraReports": [
+    "Nothing is wrong: the starter works as specified."
+  ],
+  "modelAnswer": "**Test sheet:** START pulls in and holds KM1. Running current about **4.6 A** (the nameplate FLC). Speed **1430 rpm**. U1 to V1 **400 V**. Overload TEST: KM1 drops out and H2 lights. After RESET the motor stays off until START is pressed.\n\n**Fault notes:** a motor that hums and will not start points to a missing phase: measure across each pole of Q1, KM1 and F2 in turn with the starter on (or check continuity with it isolated). A lamp that stays off: measure across the lamp first; voltage across it means the lamp has failed, no voltage means the feed or return is broken.\n\n**Handover:** record Q1 and F2 settings, IR and continuity results, and the date of the test on the test sheet.",
+  "schematicIntro": "The working starter. Press START and STOP, try the overload TEST and RESET, and watch the event log."
+}

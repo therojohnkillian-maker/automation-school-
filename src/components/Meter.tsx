@@ -15,12 +15,14 @@ export function placeProbe(p: ProbeState, ref: string): ProbeState {
   return p.next === 'red' ? { ...p, red: ref, next: 'black' } : { ...p, black: ref, next: 'red' };
 }
 
-export function Meter({ circuit, probes, onChange, version: _v }: { circuit: Circuit; probes: ProbeState; onChange: (p: ProbeState) => void; version: number }) {
+/** `withIR` adds the 500 V insulation resistance tester range (M3 onwards). */
+export function Meter({ circuit, probes, onChange, version: _v, withIR = !!circuit.def.irTester }: { circuit: Circuit; probes: ProbeState; onChange: (p: ProbeState) => void; version: number; withIR?: boolean }) {
   const reading = probes.red && probes.black ? measure(circuit, probes.red, probes.black, probes.mode) : null;
   const modes: { id: MeterMode; label: string; aria: string }[] = [
     { id: 'VAC', label: 'V~', aria: 'AC volts' },
     { id: 'VDC', label: 'V=', aria: 'DC volts' },
     { id: 'OHM', label: 'Ω', aria: 'Resistance' },
+    ...(withIR ? [{ id: 'IR' as MeterMode, label: 'IR 500 V', aria: 'Insulation test 500 volts' }] : []),
   ];
   return (
     <div className="meter" aria-label="Multimeter">

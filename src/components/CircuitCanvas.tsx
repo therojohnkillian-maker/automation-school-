@@ -32,7 +32,7 @@ export function CircuitCanvas(props: CanvasProps) {
   // On narrow screens, fitting the whole drawing makes terminals too small to tap: scroll instead.
   useEffect(() => {
     const cw = wrapRef.current?.clientWidth ?? w;
-    if (cw < w * 0.7) setZoom(0.85);
+    if (cw < Math.min(w * 0.7, 640)) setZoom(0.85);
   }, [w]);
   const pin = (ref: string): XY | null => {
     const [pid, t] = ref.split(':');
@@ -290,7 +290,7 @@ function PartView(props: CanvasProps & { part: PartJson }) {
       box('A1', 'A2', on, st.burnt ? 'BURNT' : on ? 'ON' : 'off');
       const A1 = P('A1');
       if (A1) els.push(<text key="cl" x={A1[0] - 20} y={A1[1] + 30} textAnchor="end" className="plabel">{p.id}</text>);
-      for (const [a, t] of [['13', `${p.id}`], ['43', `${p.id}`]] as const) {
+      for (const [a, t] of [['13', `${p.id}`], ['43', `${p.id}`], ['21', `${p.id}`]] as const) {
         const A = P(a);
         if (A) els.push(<text key={`al${a}`} x={A[0] - 18} y={A[1] + 30} textAnchor="end" className="plabel">{t}</text>);
       }
@@ -478,6 +478,69 @@ function PartView(props: CanvasProps & { part: PartJson }) {
             <rect x={x0} y={y0} width={x1 - x0} height={y1 - y0} fill={st.psuOn ? '#e5f4ea' : '#fff'} stroke={INK} strokeWidth={2.5} rx={4} />
             <text x={(x0 + x1) / 2} y={(y0 + y1) / 2 - 3} textAnchor="middle" className="state">24 V DC</text>
             <text x={(x0 + x1) / 2} y={(y0 + y1) / 2 + 14} textAnchor="middle" className={`state ${st.psuOn ? '' : 'state-warn'}`}>{st.psuOn ? 'OUTPUT ON' : 'OUTPUT OFF'}</text>
+          </g>,
+        );
+      }
+      break;
+    }
+    case 'timer': {
+      const on = !!st.energised;
+      contact('15', '16', !st.done, true);
+      contact('17', '18', !!st.done);
+      box('A1', 'A2', on, st.burnt ? 'BURNT' : st.done ? 'done' : `${((st.elapsedMs ?? 0) / 1000).toFixed(1)} s`);
+      for (const a of ['A1', '15', '17']) {
+        const A = P(a);
+        if (A) els.push(<text key={`tl${a}`} x={A[0] - 20} y={A[1] + 30} textAnchor="end" className="plabel">{p.id}</text>);
+      }
+      break;
+    }
+    case 'softstart': {
+      const ins = ['1L1', '3L2', '5L3'].map(P);
+      const outs = ['2T1', '4T2', '6T3'].map(P);
+      if (ins.every(Boolean) && outs.every(Boolean)) {
+        const x0 = ins[0]![0] - 22;
+        const x1 = ins[2]![0] + 22;
+        const y0 = ins[0]![1] + 18;
+        const y1 = outs[0]![1] - 18;
+        const fault = st.mode?.startsWith('FAULT');
+        els.push(
+          <g key="ss">
+            {ins.map((A, i) => <line key={`i${i}`} x1={A![0]} y1={A![1]} x2={A![0]} y2={y0} stroke={INK} strokeWidth={2.5} />)}
+            {outs.map((A, i) => <line key={`o${i}`} x1={A![0]} y1={y1} x2={A![0]} y2={A![1]} stroke={INK} strokeWidth={2.5} />)}
+            <rect x={x0} y={y0} width={x1 - x0} height={y1 - y0} fill={st.energised && !fault ? '#e5f4ea' : '#fff'} stroke={INK} strokeWidth={2.5} rx={4} />
+            <text x={(x0 + x1) / 2} y={(y0 + y1) / 2 - 2} textAnchor="middle" className="tlabel" style={{ fontWeight: 700 }}>SOFT START</text>
+            <text x={(x0 + x1) / 2} y={(y0 + y1) / 2 + 14} textAnchor="middle" className={`state ${fault ? 'state-warn' : ''}`}>{st.mode}</text>
+          </g>,
+        );
+      }
+      const I = P('IN1');
+      if (I) els.push(<text key="lim" x={I[0] + 14} y={I[1] + 4} className="tlabel">limit {p.params?.currentLimit ?? 3}×FLC · ramp {((p.params?.rampMs ?? 5000) / 1000).toFixed(0)} s</text>);
+      break;
+    }
+    case 'motor6': {
+      const U = P('U1');
+      const W = P('W1');
+      const U2 = P('U2');
+      const E = P('PE');
+      if (U && W && U2) {
+        const cx = (U[0] + W[0]) / 2;
+        const cy = U2[1] + 64;
+        const m = st.motor!;
+        const stateText: Record<string, string> = {
+          stopped: 'STOPPED', starting: 'STARTING', running: 'RUNNING', stalled: 'STALLED (humming)', 'single-phasing': 'TWO PHASES ONLY', coasting: 'COASTING',
+        };
+        const conn = m.connection === 'low' ? ' · windings at 58% volts' : m.connection === 'high' ? ' · WINDINGS OVER-VOLTAGE' : '';
+        els.push(
+          <g key="mot6">
+            <rect x={U[0] - 26} y={U[1] - 22} width={W[0] - U[0] + 52} height={U2[1] - U[1] + 44} fill="none" stroke="#7a8794" strokeDasharray="5 4" rx={6} />
+            <text x={U[0] - 22} y={U[1] - 28} className="tlabel">terminal box</text>
+            {E && <path d={`M${E[0]},${E[1]} V${cy} H${cx + 28}`} stroke="#2e7d32" strokeWidth={2.5} fill="none" strokeDasharray="6 3" />}
+            <line x1={cx} y1={U2[1] + 22} x2={cx} y2={cy - 28} stroke={INK} strokeWidth={2.5} />
+            <circle cx={cx} cy={cy} r={28} fill={m.state === 'running' && m.connection !== 'high' ? '#e5f4ea' : m.state === 'stalled' || m.state === 'single-phasing' || m.connection === 'high' ? '#fde8ea' : '#fff'} stroke={INK} strokeWidth={2.5} />
+            <text x={cx} y={cy - 2} textAnchor="middle" className="state">M</text>
+            <text x={cx} y={cy + 14} textAnchor="middle" className="tlabel">3~</text>
+            <text x={cx + 40} y={cy + 40} className={`state ${m.state === 'stalled' || m.state === 'single-phasing' || m.connection === 'high' ? 'state-warn' : ''}`}>{stateText[m.state]}{m.direction ? (m.direction === 'forward' ? ' ⟳' : ' ⟲') : ''}</text>
+            <text x={cx + 40} y={cy + 56} className="tlabel">{Math.abs(m.rpm)} rpm · {m.amps} A{conn}</text>
           </g>,
         );
       }

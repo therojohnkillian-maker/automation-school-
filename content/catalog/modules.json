@@ -1,5 +1,5 @@
 {
-  "contentVersion": "0.6.0",
+  "contentVersion": "0.7.0",
   "modules": [
     {
       "id": "m0",
@@ -45,10 +45,14 @@
       "summary": "Nameplate, star/delta, DOL, forward/reverse, star-delta, soft starter.",
       "required": false,
       "plannedPhase": 3,
-      "note": "The DOL starter lesson is ready. Forward/reverse, star-delta and soft starters follow in Phase 5.",
       "lessons": [
-        "m3-l1"
-      ]
+        "m3-l1",
+        "m3-l2",
+        "m3-l3",
+        "m3-l4",
+        "m3-l5"
+      ],
+      "placement": true
     },
     {
       "id": "m4",

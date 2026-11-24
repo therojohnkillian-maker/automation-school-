@@ -77,7 +77,7 @@ test('apprentice completes M0 and DOL; trainer signs off; progress imports on an
 
   // ---- M0 ----
   await p.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Learn' }).click();
-  await expect(p.locator('.lesson-list li', { hasText: m3.title })).toContainText('Locked');
+  await expect(p.locator('.lesson-list li', { hasText: m3.title }).first()).toContainText('Locked');
   await p.locator('.lesson-list li', { hasText: m0.title }).getByRole('link', { name: 'Start' }).click();
   await p.getByRole('button', { name: /Next: Learn/ }).click();
   for (let i = 1; i < m0.learn.cards.length; i++) await p.getByRole('button', { name: /Next card/ }).click();
@@ -144,7 +144,7 @@ test('apprentice completes M0 and DOL; trainer signs off; progress imports on an
 
   // ---- M3 DOL ----
   await p.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Learn' }).click();
-  await p.locator('.lesson-list li', { hasText: m3.title }).getByRole('link', { name: 'Start' }).click();
+  await p.locator('.lesson-list li', { hasText: m3.title }).first().getByRole('link', { name: 'Start' }).click();
   await p.getByRole('button', { name: /Next: Learn/ }).click();
   for (let i = 1; i < m3.learn.cards.length; i++) await p.getByRole('button', { name: /Next card/ }).click();
   await p.getByRole('button', { name: /Next: Show/ }).click();

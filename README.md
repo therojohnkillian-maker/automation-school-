@@ -5,6 +5,8 @@ An offline-first training app for apprentices: safety, wiring, motors, drives, P
 > **Training only.** The simulators are simplified and never connect to real equipment. An app score never makes anyone competent or authorised. Site procedures always come first.
 
 ## Status
+Phase 5 (Expand), M3: five motor lessons (DOL, nameplate and insulation testing, forward/reverse, star-delta, soft starter), templates T1–T3 and the M3 placement test.
+
 Phase 3 (First slice): M0 Safe isolation and the M3 DOL starter lesson, each through all seven steps (Why, Learn, Show, Build, Break, Prove, Apply), with the circuit simulator, hidden faults, scoring and trainer sign-off. See `docs/SIMULATORS.md` for simplifications.
 
 ## Develop
